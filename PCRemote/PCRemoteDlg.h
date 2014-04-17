@@ -23,7 +23,10 @@ public:
 // 实现
 protected:
 	HICON m_hIcon;
-	CMenu m_MainMemu;
+	CMenu m_MainMemu;				//主对话框上菜单
+	CStatusBar m_StatusBar;			//状态栏
+	int iCount;
+
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -55,4 +58,6 @@ public:
 	afx_msg void OnMainBuild();
 	afx_msg void OnMainClose();
 	afx_msg void OnMainSet();
+	// create statusbar
+	void CreateStatusBar(void);
 };

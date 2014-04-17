@@ -81,6 +81,7 @@ CPCRemoteDlg::CPCRemoteDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CPCRemoteDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	iCount = 0;
 }
 
 void CPCRemoteDlg::DoDataExchange(CDataExchange* pDX)
@@ -149,6 +150,9 @@ BOOL CPCRemoteDlg::OnInitDialog()
 	SetMenu(&m_MainMemu);
 
 	InitList();//初始化列表
+	CreateStatusBar();
+
+	ShowMessage(true,"软件初始化成功...");
 
 	CRect rect;
 	GetWindowRect(rect);
@@ -242,7 +246,7 @@ void CPCRemoteDlg::OnSize(UINT nType, int cx, int cy)
 		rc.left		= 1;
 		rc.top		= cy-156;
 		rc.right	= cx-1;
-		rc.bottom	= cy-6;
+		rc.bottom	= cy-20;
 		m_CList_Message.MoveWindow(rc);
 
 		for (int i = 0; i < g_Column_Message_Count; i++)
@@ -253,6 +257,17 @@ void CPCRemoteDlg::OnSize(UINT nType, int cx, int cy)
 			int lenth = dd;
 			m_CList_Message.SetColumnWidth(i, lenth);
 		}
+	}
+
+	if (m_StatusBar.m_hWnd != NULL)
+	{
+		CRect rc;
+		rc.top		= cy-20;
+		rc.left		= 0;
+		rc.right	= cx;
+		rc.bottom	= cy;
+		m_StatusBar.MoveWindow(rc);
+		m_StatusBar.SetPaneInfo(0, m_StatusBar.GetItemID(0), SBPS_POPOUT, cx-10);
 	}
 }
 
@@ -288,6 +303,7 @@ void CPCRemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName, CS
 	m_CList_Online.SetItemText(0, ONLINELIST_CPU, strCPU);
 	m_CList_Online.SetItemText(0, ONLINELIST_VIDEO, strVideo);
 	m_CList_Online.SetItemText(0, ONLINELIST_PING, strPing);
+	ShowMessage(true, strIP+"主机上线");
 }
 
 
@@ -304,6 +320,21 @@ void CPCRemoteDlg::ShowMessage(bool bIsOK, CString strMsg)
 	m_CList_Message.InsertItem(0, strIsOK);
 	m_CList_Message.SetItemText(0, 1, strTime);
 	m_CList_Message.SetItemText(0, 2, strMsg);
+
+	if (strMsg.Find("上线") > 0)
+	{
+		iCount++;
+	}else if (strMsg.Find("下线") > 0 || strMsg.Find("断开") >0)
+	{
+		iCount--;
+	} 
+
+	iCount = iCount < 0 ? 0 : iCount;
+	CString strStatusMsg;
+	strStatusMsg.Format("连接:%d", iCount);
+	m_StatusBar.SetPaneText(0, strStatusMsg);
+
+
 }
 
 
@@ -312,7 +343,6 @@ void CPCRemoteDlg::test(void)
 	AddList("192.168.0.1","本机局域网","Lang","Windows7","2.2GHZ","有","123232");
 	AddList("192.168.0.2","本机局域网","Lang","Windows7","2.2GHZ","有","123232");
 	AddList("192.168.0.3","本机局域网","Lang","Windows7","2.2GHZ","有","123232");
-	ShowMessage(true,"软件初始化成功...");
 }
 
 
@@ -429,4 +459,22 @@ void CPCRemoteDlg::OnMainClose()
 void CPCRemoteDlg::OnMainSet()
 {
 	// TODO: 在此添加命令处理程序代码
+}
+
+static UINT indicators[] =
+{
+	IDR_STATUSBAR_STRING
+};
+
+
+
+// create statusbar
+void CPCRemoteDlg::CreateStatusBar(void)
+{
+	if (!m_StatusBar.Create(this) || 
+		!m_StatusBar.SetIndicators(indicators, sizeof(indicators)/sizeof(UINT)))
+	{
+		TRACE("Failed to create status bar\n");
+		return ;
+	}
 }
