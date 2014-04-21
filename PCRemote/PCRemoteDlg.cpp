@@ -581,7 +581,7 @@ LRESULT CPCRemoteDlg::OnIconNotify(WPARAM wParam, LPARAM lParam)
 		GetCursorPos(&point);
 
 		if (!IsWindowVisible() || IsIconic())
-			menu.ModifyMenu(IDM_NOTIFY_SHOW, MF_STRING, IDM_NOTIFY_SHOW, "ÏÔÊ¾");
+			menu.ModifyMenu(IDM_NOTIFY_SHOW, MF_STRING, IDM_NOTIFY_SHOW, "ÏÔÊ¾´°¿Ú");
 
 		::SetForegroundWindow(nid.hWnd);
 		menu.GetSubMenu(0)->TrackPopupMenu(
