@@ -4,7 +4,7 @@
 
 #pragma once
 #include "afxcmn.h"
-
+#include "TrueColorToolBar.h"
 
 // CPCRemoteDlg 对话框
 class CPCRemoteDlg : public CDialogEx
@@ -26,6 +26,8 @@ protected:
 	CMenu m_MainMemu;				//主对话框上菜单
 	CStatusBar m_StatusBar;			//状态栏
 	int iCount;
+
+	CTrueColorToolBar m_ToolBar;
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -60,4 +62,5 @@ public:
 	afx_msg void OnMainSet();
 	// create statusbar
 	void CreateStatusBar(void);
+	void CreateToolBar(void);
 };

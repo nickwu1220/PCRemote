@@ -151,6 +151,7 @@ BOOL CPCRemoteDlg::OnInitDialog()
 
 	InitList();//初始化列表
 	CreateStatusBar();
+	CreateToolBar();
 
 	ShowMessage(true,"软件初始化成功...");
 
@@ -221,6 +222,11 @@ void CPCRemoteDlg::OnSize(UINT nType, int cx, int cy)
 	// TODO: 在此处添加消息处理程序代码
 	double dcx = cx; //当前对话框的总宽度
 
+	if (SIZE_MINIMIZED == nType)
+	{
+		return ;
+	}
+
 	if (m_CList_Online.m_hWnd != NULL)
 	{
 		CRect rc;
@@ -268,6 +274,15 @@ void CPCRemoteDlg::OnSize(UINT nType, int cx, int cy)
 		rc.bottom	= cy;
 		m_StatusBar.MoveWindow(rc);
 		m_StatusBar.SetPaneInfo(0, m_StatusBar.GetItemID(0), SBPS_POPOUT, cx-10);
+	}
+
+	if (m_ToolBar.m_hWnd != nullptr)
+	{
+		CRect rc;
+		rc.left = rc.top = 0;
+		rc.right = cx;
+		rc.bottom = 80;
+		m_ToolBar.MoveWindow(rc);
 	}
 }
 
@@ -372,54 +387,63 @@ void CPCRemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 void CPCRemoteDlg::OnOnlineAudio()
 {
 	// TODO: 在此添加命令处理程序代码
+	MessageBox("语音管理");
 }
 
 
 void CPCRemoteDlg::OnOnlineCmd()
 {
 	// TODO: 在此添加命令处理程序代码
+	MessageBox("终端管理");
 }
 
 
 void CPCRemoteDlg::OnOnlineDesktop()
 {
 	// TODO: 在此添加命令处理程序代码
+	MessageBox("桌面管理");
 }
 
 
 void CPCRemoteDlg::OnOnlineFile()
 {
 	// TODO: 在此添加命令处理程序代码
+	MessageBox("文件管理");
 }
 
 
 void CPCRemoteDlg::OnOnlineProcess()
 {
 	// TODO: 在此添加命令处理程序代码
+	MessageBox("进程管理");
 }
 
 
 void CPCRemoteDlg::OnOnlineRegedit()
 {
 	// TODO: 在此添加命令处理程序代码
+	MessageBox("注册表管理");
 }
 
 
 void CPCRemoteDlg::OnOnlineServer()
 {
 	// TODO: 在此添加命令处理程序代码
+	MessageBox("服务管理");
 }
 
 
 void CPCRemoteDlg::OnOnlineVideo()
 {
 	// TODO: 在此添加命令处理程序代码
+	MessageBox("视频管理");
 }
 
 
 void CPCRemoteDlg::OnOnlineWindow()
 {
 	// TODO: 在此添加命令处理程序代码
+	MessageBox("窗口管理");
 }
 
 
@@ -446,6 +470,7 @@ void CPCRemoteDlg::OnMainAbout()
 void CPCRemoteDlg::OnMainBuild()
 {
 	// TODO: 在此添加命令处理程序代码
+	MessageBox("生成服务端");
 }
 
 
@@ -459,6 +484,7 @@ void CPCRemoteDlg::OnMainClose()
 void CPCRemoteDlg::OnMainSet()
 {
 	// TODO: 在此添加命令处理程序代码
+	MessageBox("参数设置");
 }
 
 static UINT indicators[] =
@@ -477,4 +503,45 @@ void CPCRemoteDlg::CreateStatusBar(void)
 		TRACE("Failed to create status bar\n");
 		return ;
 	}
+}
+
+
+void CPCRemoteDlg::CreateToolBar(void)
+{
+	if (!m_ToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
+		| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
+		!m_ToolBar.LoadToolBar(IDR_TOOLBAR_MAIN))
+	{
+		TRACE0("Failed to create toolbar\n");
+		return;      // fail to create
+	}
+	m_ToolBar.ModifyStyle(0, TBSTYLE_FLAT);    //Fix for WinXP
+	m_ToolBar.LoadTrueColorToolBar
+		(
+		48,    //加载真彩工具条
+		IDB_BITMAP_MAIN,
+		IDB_BITMAP_MAIN,
+		IDB_BITMAP_MAIN
+		);
+	RECT rt,rtMain;
+	GetWindowRect(&rtMain);
+	rt.left=0;
+	rt.top=0;
+	rt.bottom=80;
+	rt.right=rtMain.right-rtMain.left+10;
+	m_ToolBar.MoveWindow(&rt,TRUE);
+
+	m_ToolBar.SetButtonText(0,"终端管理");  
+	m_ToolBar.SetButtonText(1,"进程管理"); 
+	m_ToolBar.SetButtonText(2,"窗口管理"); 
+	m_ToolBar.SetButtonText(3,"桌面管理"); 
+	m_ToolBar.SetButtonText(4,"文件管理"); 
+	m_ToolBar.SetButtonText(5,"语音管理"); 
+	m_ToolBar.SetButtonText(6,"视频管理"); 
+	m_ToolBar.SetButtonText(7,"服务管理"); 
+	m_ToolBar.SetButtonText(8,"注册表管理"); 
+	m_ToolBar.SetButtonText(10,"参数设置"); 
+	m_ToolBar.SetButtonText(11,"生成服务端"); 
+	m_ToolBar.SetButtonText(12,"帮助"); 
+	RepositionBars(AFX_IDW_CONTROLBAR_FIRST,AFX_IDW_CONTROLBAR_LAST,0);
 }
