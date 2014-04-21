@@ -50,7 +50,10 @@ enum
 };
 
 
-
+enum
+{
+	UM_ICONNOTIFY= WM_USER+0x100,
+};
 
 
 

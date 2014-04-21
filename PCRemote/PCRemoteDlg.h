@@ -28,6 +28,7 @@ protected:
 	int iCount;
 
 	CTrueColorToolBar m_ToolBar;
+	NOTIFYICONDATA nid;				//托盘
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -61,6 +62,10 @@ public:
 	afx_msg void OnMainClose();
 	afx_msg void OnMainSet();
 	// create statusbar
+	afx_msg LRESULT OnIconNotify(WPARAM wParam,LPARAM lParam);		//托盘callback
 	void CreateStatusBar(void);
 	void CreateToolBar(void);
+	afx_msg void OnNotifyClose();
+	afx_msg void OnNotifyShow();
+	afx_msg void OnClose();
 };

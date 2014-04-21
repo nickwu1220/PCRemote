@@ -111,6 +111,10 @@ BEGIN_MESSAGE_MAP(CPCRemoteDlg, CDialogEx)
 	ON_COMMAND(IDM_MAIN_BUILD, &CPCRemoteDlg::OnMainBuild)
 	ON_COMMAND(IDM_MAIN_CLOSE, &CPCRemoteDlg::OnMainClose)
 	ON_COMMAND(IDM_MAIN_SET, &CPCRemoteDlg::OnMainSet)
+	ON_MESSAGE(UM_ICONNOTIFY, OnIconNotify)  
+	ON_COMMAND(IDM_NOTIFY_CLOSE, &CPCRemoteDlg::OnNotifyClose)
+	ON_COMMAND(IDM_NOTIFY_SHOW, &CPCRemoteDlg::OnNotifyShow)
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -152,6 +156,16 @@ BOOL CPCRemoteDlg::OnInitDialog()
 	InitList();//初始化列表
 	CreateStatusBar();
 	CreateToolBar();
+
+	nid.cbSize			 = sizeof(nid);
+	nid.hWnd			 = m_hWnd;
+	nid.uID				 = IDR_MAINFRAME;
+	nid.uFlags			 = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+	nid.uCallbackMessage = UM_ICONNOTIFY;
+	nid.hIcon			 = m_hIcon;
+	CString str("PCRemote远程协助软件");
+	lstrcpyn(nid.szTip, (LPCSTR)str, sizeof(nid.szTip)/sizeof(nid.szTip[0]));
+	Shell_NotifyIcon(NIM_ADD, &nid);	//显示托盘
 
 	ShowMessage(true,"软件初始化成功...");
 
@@ -544,4 +558,63 @@ void CPCRemoteDlg::CreateToolBar(void)
 	m_ToolBar.SetButtonText(11,"生成服务端"); 
 	m_ToolBar.SetButtonText(12,"帮助"); 
 	RepositionBars(AFX_IDW_CONTROLBAR_FIRST,AFX_IDW_CONTROLBAR_LAST,0);
+}
+
+
+LRESULT CPCRemoteDlg::OnIconNotify(WPARAM wParam, LPARAM lParam)
+{
+	switch((UINT)lParam)
+	{
+	case WM_LBUTTONDOWN:
+	case WM_LBUTTONDBLCLK:
+		if(IsIconic())
+			ShowWindow(SW_RESTORE);
+		else if (!IsWindowVisible())
+			ShowWindow(SW_SHOW);
+		else
+			ShowWindow(SW_HIDE);	
+		break;
+	case WM_RBUTTONDOWN:
+		CMenu menu;
+		menu.LoadMenu(IDR_MENU_NOTIFY);
+		CPoint point;
+		GetCursorPos(&point);
+
+		if (!IsWindowVisible() || IsIconic())
+			menu.ModifyMenu(IDM_NOTIFY_SHOW, MF_STRING, IDM_NOTIFY_SHOW, "显示");
+
+		::SetForegroundWindow(nid.hWnd);
+		menu.GetSubMenu(0)->TrackPopupMenu(
+			TPM_LEFTBUTTON|TPM_RIGHTBUTTON,
+			point.x, point.y, this, NULL);
+		break;
+	}
+
+	return 0;
+}
+
+void CPCRemoteDlg::OnNotifyClose()
+{
+	// TODO: 在此添加命令处理程序代码
+	PostMessage(WM_CLOSE);
+}
+
+
+void CPCRemoteDlg::OnNotifyShow()
+{
+	// TODO: 在此添加命令处理程序代码
+	if(IsIconic())
+		ShowWindow(SW_RESTORE);
+	else if (!IsWindowVisible())
+		ShowWindow(SW_SHOW);
+	else
+		ShowWindow(SW_HIDE);
+}
+
+
+void CPCRemoteDlg::OnClose()
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	Shell_NotifyIcon(NIM_DELETE, &nid); //销毁图标
+	CDialogEx::OnClose();
 }
