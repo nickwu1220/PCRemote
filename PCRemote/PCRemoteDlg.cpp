@@ -6,6 +6,7 @@
 #include "PCRemote.h"
 #include "PCRemoteDlg.h"
 #include "afxdialogex.h"
+#include "SettingDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -40,6 +41,9 @@ COLUMNSTRUCT g_Column_Message_Data[] =
 
 int g_Column_Message_Count= 3;//Message列表 列的个数
 int g_Column_Message_Width = 0;//Message列表总宽度
+
+
+CIOCPServer *m_iocpServer = NULL;
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -120,6 +124,84 @@ END_MESSAGE_MAP()
 
 // CPCRemoteDlg 消息处理程序
 
+void CALLBACK CPCRemoteDlg::NotifyProc(LPVOID lpParam, ClientContext *pContext, UINT nCode)
+{
+	try
+	{
+		switch (nCode)
+		{
+		case NC_CLIENT_CONNECT:
+			break;
+		case NC_CLIENT_DISCONNECT:
+			//g_pConnectView->PostMessage(WM_REMOVEFROMLIST, 0, (LPARAM)pContext);
+			break;
+		case NC_TRANSMIT:
+			break;
+		case NC_RECEIVE:
+			//ProcessReceive(pContext);
+			break;
+		case NC_RECEIVE_COMPLETE:
+			//ProcessReceiveComplete(pContext);
+			break;
+		}
+	}catch(...){}
+}
+
+void CPCRemoteDlg::Activate(UINT nPort, UINT nMaxConnections)
+{
+	CString		str;
+
+	if (m_iocpServer != NULL)
+	{
+		m_iocpServer->Shutdown();
+		delete m_iocpServer;
+
+	}
+	m_iocpServer = new CIOCPServer;
+
+	// 开启IPCP服务器
+	if (m_iocpServer->Initialize(NotifyProc, NULL, nMaxConnections, nPort))
+	{
+
+		char hostname[256]; 
+		gethostname(hostname, sizeof(hostname));
+		HOSTENT *host = gethostbyname(hostname);
+		if (host != NULL)
+		{ 
+			for ( int i=0; ; i++ )
+			{ 
+				str += inet_ntoa(*(IN_ADDR*)host->h_addr_list[i]);
+				if ( host->h_addr_list[i] + host->h_length >= host->h_name )
+					break;
+				str += "/";
+			}
+		}
+
+		str.Format("监听端口: %d成功", nPort);
+		ShowMessage(true, str);
+	}
+	else
+	{
+		str.Format("监听端口: %d失败", nPort);
+		ShowMessage(false, str);
+	}
+}
+
+// 开始监听
+void CPCRemoteDlg::ListenPort(void)
+{
+	int nPort = ((CPCRemoteApp*)AfxGetApp())->m_IniFile.GetInt("Settings", "ListenPort");
+	int	nMaxConnection = ((CPCRemoteApp*)AfxGetApp())->m_IniFile.GetInt("Settings", "MaxConnection");
+
+	if(nPort == 0)
+		nPort = 3000;
+	if(nMaxConnection == 0)
+		nMaxConnection = 10000;
+
+	Activate(nPort, nMaxConnection);
+}
+
+
 BOOL CPCRemoteDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -174,6 +256,7 @@ BOOL CPCRemoteDlg::OnInitDialog()
 	rect.bottom += 20;
 	MoveWindow(rect);
 
+	ListenPort();		//开始监听端口
 	test();
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -498,7 +581,9 @@ void CPCRemoteDlg::OnMainClose()
 void CPCRemoteDlg::OnMainSet()
 {
 	// TODO: 在此添加命令处理程序代码
-	MessageBox("参数设置");
+	//MessageBox("参数设置");
+	CSettingDlg dlg;
+	dlg.DoModal();
 }
 
 static UINT indicators[] =
@@ -618,3 +703,5 @@ void CPCRemoteDlg::OnClose()
 	Shell_NotifyIcon(NIM_DELETE, &nid); //销毁图标
 	CDialogEx::OnClose();
 }
+
+

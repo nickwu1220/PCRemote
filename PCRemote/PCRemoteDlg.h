@@ -5,7 +5,7 @@
 #pragma once
 #include "afxcmn.h"
 #include "TrueColorToolBar.h"
-
+#include "include/IOCPServer.h"
 // CPCRemoteDlg 对话框
 class CPCRemoteDlg : public CDialogEx
 {
@@ -68,4 +68,11 @@ public:
 	afx_msg void OnNotifyClose();
 	afx_msg void OnNotifyShow();
 	afx_msg void OnClose();
+
+protected:
+	void Activate(UINT nPort, UINT nMaxConnections);
+	static void CALLBACK NotifyProc(LPVOID lpParam, ClientContext* pContext, UINT nCode);
+public:
+	// 开始监听
+	void ListenPort(void);
 };
