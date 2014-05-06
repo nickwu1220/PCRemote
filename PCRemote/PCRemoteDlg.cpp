@@ -126,6 +126,7 @@ END_MESSAGE_MAP()
 
 void CALLBACK CPCRemoteDlg::NotifyProc(LPVOID lpParam, ClientContext *pContext, UINT nCode)
 {
+	::MessageBox(NULL,"有连接到来!!","",NULL);
 	try
 	{
 		switch (nCode)
