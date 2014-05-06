@@ -53,8 +53,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Wininet.lib;..\..\common\zlib\zlib.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\bin\server\server.dll</OutputFile>
+      <AdditionalDependencies>Wininet.lib;..\..\..\common\zlib\zlib.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\..\bin\server\server.dll</OutputFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -71,15 +71,15 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>Wininet.lib;..\..\common\zlib\zlib.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>..\bin\server\server.dll</OutputFile>
+      <AdditionalDependencies>Wininet.lib;..\..\..\common\zlib\zlib.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>..\..\..\bin\server\server.dll</OutputFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\common\Audio.h" />
+    <ClInclude Include="..\..\..\common\Audio.h" />
     <ClInclude Include="..\common\AudioManager.h" />
     <ClInclude Include="..\common\Buffer.h" />
     <ClInclude Include="..\common\decode.h" />
@@ -107,7 +107,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\common\Audio.cpp" />
+    <ClCompile Include="..\..\..\common\Audio.cpp" />
     <ClCompile Include="..\common\AudioManager.cpp" />
     <ClCompile Include="..\common\Buffer.cpp" />
     <ClCompile Include="..\common\Dialupass.cpp" />

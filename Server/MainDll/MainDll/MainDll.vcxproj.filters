@@ -93,7 +93,7 @@
     <ClInclude Include="..\common\VideoManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\common\Audio.h">
+    <ClInclude Include="..\..\..\common\Audio.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -158,7 +158,7 @@
     <ClCompile Include="..\common\VideoManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\common\Audio.cpp">
+    <ClCompile Include="..\..\..\common\Audio.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

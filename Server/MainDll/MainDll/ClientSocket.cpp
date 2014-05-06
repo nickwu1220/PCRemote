@@ -4,7 +4,7 @@
 
 #include "StdAfx.h"
 #include "ClientSocket.h"
-#include "../../common/zlib/zlib.h"
+#include "..\..\..\common\zlib\zlib.h"
 #include <process.h>
 #include <MSTcpIP.h>
 #include "../common/Manager.h"
