@@ -44,6 +44,7 @@ int g_Column_Message_Width = 0;//Message列表总宽度
 
 
 CIOCPServer *m_iocpServer = NULL;
+CPCRemoteDlg *g_pPCRemoteDlg = NULL;
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
@@ -86,6 +87,7 @@ CPCRemoteDlg::CPCRemoteDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	iCount = 0;
+	g_pPCRemoteDlg = this;
 }
 
 void CPCRemoteDlg::DoDataExchange(CDataExchange* pDX)
@@ -115,7 +117,10 @@ BEGIN_MESSAGE_MAP(CPCRemoteDlg, CDialogEx)
 	ON_COMMAND(IDM_MAIN_BUILD, &CPCRemoteDlg::OnMainBuild)
 	ON_COMMAND(IDM_MAIN_CLOSE, &CPCRemoteDlg::OnMainClose)
 	ON_COMMAND(IDM_MAIN_SET, &CPCRemoteDlg::OnMainSet)
+
+	//自定义消息
 	ON_MESSAGE(UM_ICONNOTIFY, OnIconNotify)  
+
 	ON_COMMAND(IDM_NOTIFY_CLOSE, &CPCRemoteDlg::OnNotifyClose)
 	ON_COMMAND(IDM_NOTIFY_SHOW, &CPCRemoteDlg::OnNotifyShow)
 	ON_WM_CLOSE()
@@ -126,7 +131,6 @@ END_MESSAGE_MAP()
 
 void CALLBACK CPCRemoteDlg::NotifyProc(LPVOID lpParam, ClientContext *pContext, UINT nCode)
 {
-	::MessageBox(NULL,"有连接到来!!","",NULL);
 	try
 	{
 		switch (nCode)
@@ -258,7 +262,7 @@ BOOL CPCRemoteDlg::OnInitDialog()
 	MoveWindow(rect);
 
 	ListenPort();		//开始监听端口
-	test();
+	//test();
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -451,12 +455,12 @@ void CPCRemoteDlg::ShowMessage(bool bIsOK, CString strMsg)
 }
 
 
-void CPCRemoteDlg::test(void)
-{
-	AddList("192.168.0.1","本机局域网","Lang","Windows7","2.2GHZ","有","123232");
-	AddList("192.168.0.2","本机局域网","Lang","Windows7","2.2GHZ","有","123232");
-	AddList("192.168.0.3","本机局域网","Lang","Windows7","2.2GHZ","有","123232");
-}
+// void CPCRemoteDlg::test(void)
+// {
+// 	AddList("192.168.0.1","本机局域网","Lang","Windows7","2.2GHZ","有","123232");
+// 	AddList("192.168.0.2","本机局域网","Lang","Windows7","2.2GHZ","有","123232");
+// 	AddList("192.168.0.3","本机局域网","Lang","Windows7","2.2GHZ","有","123232");
+// }
 
 
 void CPCRemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)

@@ -45,7 +45,7 @@ public:
 	void AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, CString strCPU, CString strVideo, CString strPing);
 	// show msg
 	void ShowMessage(bool bIsOK, CString strMsg);
-	void test(void);
+	//void test(void);
 	afx_msg void OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnOnlineAudio();
 	afx_msg void OnOnlineCmd();
