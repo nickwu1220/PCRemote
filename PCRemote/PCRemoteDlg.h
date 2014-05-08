@@ -61,8 +61,12 @@ public:
 	afx_msg void OnMainBuild();
 	afx_msg void OnMainClose();
 	afx_msg void OnMainSet();
+
+	//自定义消息
 	// create statusbar
 	afx_msg LRESULT OnIconNotify(WPARAM wParam,LPARAM lParam);		//托盘callback
+	afx_msg LRESULT OnAddToList(WPARAM wParam,LPARAM lParam);		//添加上线client信息到列表
+
 	void CreateStatusBar(void);
 	void CreateToolBar(void);
 	afx_msg void OnNotifyClose();
@@ -72,7 +76,9 @@ public:
 protected:
 	void Activate(UINT nPort, UINT nMaxConnections);
 	static void CALLBACK NotifyProc(LPVOID lpParam, ClientContext* pContext, UINT nCode);
+	static void ProcessReceiveComplete(ClientContext *pContext);
 public:
 	// 开始监听
 	void ListenPort(void);
+	CString GetOSDisplayString(OSVERSIONINFOEX& OsVerInfoEx);
 };
