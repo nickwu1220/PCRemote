@@ -29,6 +29,7 @@ public:
 	DECLARE_MESSAGE_MAP()
 public:
 	CIniFile m_IniFile;
+	bool m_bIsQQwryExist;
 };
 
 extern CPCRemoteApp theApp;

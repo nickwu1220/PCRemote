@@ -27,6 +27,9 @@ CPCRemoteApp::CPCRemoteApp()
 
 	// TODO: 在此处添加构造代码，
 	// 将所有重要的初始化放置在 InitInstance 中
+	HANDLE hFile = CreateFile("QQwry.dat", 0, 0, NULL, OPEN_EXISTING, 0, NULL);
+	m_bIsQQwryExist = (INVALID_HANDLE_VALUE != hFile) ? true : false;
+	CloseHandle(hFile);
 }
 
 

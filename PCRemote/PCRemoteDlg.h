@@ -6,6 +6,8 @@
 #include "afxcmn.h"
 #include "TrueColorToolBar.h"
 #include "include/IOCPServer.h"
+#include "SEU_QQwry.h"
+
 // CPCRemoteDlg 对话框
 class CPCRemoteDlg : public CDialogEx
 {
@@ -26,7 +28,7 @@ protected:
 	CMenu m_MainMemu;				//主对话框上菜单
 	CStatusBar m_StatusBar;			//状态栏
 	int iCount;
-
+	SEU_QQwry *m_QQwry;
 	CTrueColorToolBar m_ToolBar;
 	NOTIFYICONDATA nid;				//托盘
 
