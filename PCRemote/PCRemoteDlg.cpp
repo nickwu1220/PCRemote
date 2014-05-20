@@ -894,7 +894,10 @@ LRESULT CPCRemoteDlg::OnAddToList(WPARAM wParam,LPARAM lParam)
 		strPCName = pLoginInfo->HostName;
 
 		strOS = GetOSDisplayString(pLoginInfo->OsVerInfoEx);
-		strCPU.Format("%dMHz", pLoginInfo->CPUClockMhz);
+
+		float dCPUClockMhz = pLoginInfo->CPUClockMhz / 1000.0;
+		strCPU.Format("%.2fGHz", dCPUClockMhz);
+
 		strPing.Format("%d", pLoginInfo->dwSpeed);
 		strVideo = pLoginInfo->bIsWebCam ? "сп" : "--";
 
