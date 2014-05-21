@@ -55,14 +55,17 @@ void CShellDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
 
-	RECT rectClient;
-	RECT rectEdit;
-	GetClientRect(&rectClient);
-	rectEdit.left = 0;
-	rectEdit.top = 0;
-	rectEdit.right = rectClient.right;
-	rectEdit.bottom = rectClient.bottom;
-	m_edit.MoveWindow(&rectEdit);
+	if(m_edit.m_hWnd != NULL)
+	{
+		RECT rectClient;
+		RECT rectEdit;
+		GetClientRect(&rectClient);
+		rectEdit.left = 0;
+		rectEdit.top = 0;
+		rectEdit.right = rectClient.right;
+		rectEdit.bottom = rectClient.bottom;
+		m_edit.MoveWindow(&rectEdit);
+	}
 	// TODO: 在此处添加消息处理程序代码
 }
 
