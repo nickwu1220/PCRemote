@@ -44,7 +44,8 @@ public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	int InitList(void);
 	// add to online list
-	void AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, CString strCPU, CString strVideo, CString strPing);
+	void AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, CString strCPU, 
+		CString strVideo, CString strPing, ClientContext *pContext);
 	// show msg
 	void ShowMessage(bool bIsOK, CString strMsg);
 	//void test(void);
@@ -83,4 +84,6 @@ public:
 	// ¿ªÊ¼¼àÌý
 	void ListenPort(void);
 	CString GetOSDisplayString(OSVERSIONINFOEX& OsVerInfoEx);
+private:
+	void SendSelectCommand(PBYTE pData, UINT nSize);
 };

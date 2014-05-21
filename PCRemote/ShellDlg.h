@@ -1,6 +1,6 @@
 #pragma once
 #include "afxwin.h"
-
+#include "include/IOCPServer.h"
 
 // CShellDlg ¶Ô»°¿ò
 
@@ -33,4 +33,10 @@ public:
 	afx_msg void OnClose();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	virtual BOOL OnInitDialog();
+	afx_msg void OnEnChangeEdit1();
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	void OnReceiveComplete(void);
+private:
+	void AddKeyBoardData(void);
 };
