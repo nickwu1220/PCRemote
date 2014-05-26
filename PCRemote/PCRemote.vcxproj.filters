@@ -34,6 +34,9 @@
     <None Include="res\cmdshell.ico">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="res\system.ico">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PCRemote.h">
@@ -78,6 +81,9 @@
     <ClInclude Include="ShellDlg.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="SystemDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PCRemote.cpp">
@@ -111,6 +117,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ShellDlg.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
