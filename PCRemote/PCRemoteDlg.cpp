@@ -132,6 +132,8 @@ BEGIN_MESSAGE_MAP(CPCRemoteDlg, CDialogEx)
 	ON_MESSAGE(UM_ICONNOTIFY, OnIconNotify)  
 	ON_MESSAGE(WM_ADDTOLIST, OnAddToList)
 	ON_MESSAGE(WM_OPENSHELLDIALOG, OnOpenShellDialog)
+	ON_MESSAGE(WM_OPENPSLISTDIALOG, OnOpenSystemDialog)
+
 
 	ON_COMMAND(IDM_NOTIFY_CLOSE, &CPCRemoteDlg::OnNotifyClose)
 	ON_COMMAND(IDM_NOTIFY_SHOW, &CPCRemoteDlg::OnNotifyShow)
@@ -191,10 +193,10 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 			break;
 		case KEYBOARD_DLG:
 			((CKeyBoardDlg *)dlg)->OnReceiveComplete();
-			break;
+			break;*/
 		case SYSTEM_DLG:
 			((CSystemDlg *)dlg)->OnReceiveComplete();
-			break;*/
+			break;
 		case SHELL_DLG:
 			((CShellDlg *)dlg)->OnReceiveComplete();
 			break;
@@ -251,10 +253,10 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 		break;
 	case TOKEN_KEYBOARD_START:
 		g_pConnectView->PostMessage(WM_OPENKEYBOARDDIALOG, 0, (LPARAM)pContext);
-		break;
-	case TOKEN_PSLIST:
-		g_pConnectView->PostMessage(WM_OPENPSLISTDIALOG, 0, (LPARAM)pContext);
 		break;*/
+	case TOKEN_PSLIST:
+		g_pPCRemoteDlg->PostMessage(WM_OPENPSLISTDIALOG, 0, (LPARAM)pContext);
+		break;
 	case TOKEN_SHELL_START:
 		g_pPCRemoteDlg->PostMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)pContext);
 		break;
@@ -650,7 +652,24 @@ void CPCRemoteDlg::OnOnlineFile()
 void CPCRemoteDlg::OnOnlineProcess()
 {
 	// TODO: 在此添加命令处理程序代码
-	MessageBox("进程管理");
+	//MessageBox("进程管理");
+	BYTE bToken = COMMAND_SYSTEM;
+	SendSelectCommand(&bToken, sizeof(BYTE));
+}
+
+//打开进程管理对话框
+LRESULT CPCRemoteDlg::OnOpenSystemDialog(WPARAM wParam, LPARAM lParam)
+{
+	ClientContext *pContext = (ClientContext*)lParam;
+	CSystemDlg *pDlg = new CSystemDlg(this, m_iocpServer, pContext);
+
+	pDlg->Create(IDD_SYSTEM, GetDesktopWindow());
+	pDlg->ShowWindow(SW_SHOW);
+
+	pContext->m_Dialog[0] = SYSTEM_DLG;
+	pContext->m_Dialog[1] = (int)pDlg;
+
+	return 0;
 }
 
 

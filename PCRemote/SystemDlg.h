@@ -1,6 +1,6 @@
 #pragma once
 #include "afxcmn.h"
-
+#include "include/IOCPServer.h"
 
 // CSystemDlg ¶Ô»°¿ò
 

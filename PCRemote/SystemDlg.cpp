@@ -5,7 +5,7 @@
 #include "PCRemote.h"
 #include "SystemDlg.h"
 #include "afxdialogex.h"
-
+#include "..\common\macros.h"
 
 // CSystemDlg 对话框
 
@@ -150,8 +150,28 @@ BOOL CSystemDlg::OnInitDialog()
 void CSystemDlg::ShowProcessList(void)
 {
 	char *pBuffer = (char*)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
-	m_list_process.DeleteAllItems();
+	DWORD dwOffset = 0;
+	char *szExeFile;
+	char *szProcessFullName;
+	CString str;
 
+	m_list_process.DeleteAllItems();
+	//遍历发送来的每一个字符别忘了他的数据结构啊 Id+进程名+0+完整名+0
+
+	int i = 0;
+	for (; dwOffset < m_pContext->m_DeCompressionBuffer.GetBufferLen()-1; i++)
+	{
+		DWORD *pdwID      = (DWORD*)(pBuffer + dwOffset);
+		szExeFile         = pBuffer + dwOffset + sizeof(DWORD);
+		szProcessFullName = pBuffer + lstrlen(szExeFile) + 1;
+
+		m_list_process.InsertItem(i, szExeFile);
+		str.Format("%5u", *pdwID);
+		m_list_process.SetItemText(i, 1, str);
+		m_list_process.SetItemText(i, 2, szProcessFullName);
+
+		dwOffset += sizeof(DWORD) + lstrlen(szExeFile) + lstrlen(szProcessFullName) + 2;
+	}
 	//遍历发送来的每一个字符别忘了他的数据结构啊 Id+进程名+0+完整名+0
 
 
