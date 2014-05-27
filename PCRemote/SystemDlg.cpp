@@ -56,16 +56,16 @@ void CSystemDlg::AdjustList(void)
 		return;
 	}
 
-	RECT rectClient;
-	RECT rectlist;
+	RECT	rectClient;
+	RECT	rectList;
 	GetClientRect(&rectClient);
-	rectlist.left = 0;
-	rectlist.top = 29;
-	rectlist.right = rectClient.right;
-	rectClient.bottom = rectClient.bottom;
+	rectList.left = 0;
+	rectList.top = 29;
+	rectList.right = rectClient.right;
+	rectList.bottom = rectClient.bottom;
 
-	m_list_process.MoveWindow(&rectlist);
-	m_list_windows.MoveWindow(&rectlist);
+	m_list_process.MoveWindow(&rectList);
+	m_list_windows.MoveWindow(&rectList);
 }
 
 
@@ -81,7 +81,7 @@ void CSystemDlg::OnClose()
 void CSystemDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
-	//AdjustList();
+	AdjustList();
 	// TODO: 在此处添加消息处理程序代码
 }
 
@@ -152,8 +152,9 @@ BOOL CSystemDlg::OnInitDialog()
 	m_list_windows.InsertColumn(0, "PID", LVCFMT_LEFT, 50);
 	m_list_windows.InsertColumn(1, "窗口名称", LVCFMT_LEFT, 300);
 
-	//AdjustList();			//调整列表大小
+	AdjustList();			//调整列表大小
 	ShowProcessList();
+	ShowSelectWindow();
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常: OCX 属性页应返回 FALSE
 }
@@ -175,7 +176,7 @@ void CSystemDlg::ShowProcessList(void)
 	{
 		DWORD *pdwID      = (DWORD*)(pBuffer + dwOffset);
 		szExeFile         = pBuffer + dwOffset + sizeof(DWORD);
-		szProcessFullName = pBuffer + lstrlen(szExeFile) + 1;
+		szProcessFullName = szExeFile + lstrlen(szExeFile) + 1;
 
 		m_list_process.InsertItem(i, szExeFile);
 		str.Format("%5u", *pdwID);
