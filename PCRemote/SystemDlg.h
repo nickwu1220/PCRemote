@@ -37,4 +37,8 @@ public:
 	void GetProcessList(void);
 	virtual BOOL OnInitDialog();
 	void ShowProcessList(void);
+	afx_msg void OnKillprocess();
+	afx_msg void OnRefreshpslist();
+	afx_msg void OnNMRClickListProcess(NMHDR *pNMHDR, LRESULT *pResult);
+	void OnReceiveComplete(void);
 };

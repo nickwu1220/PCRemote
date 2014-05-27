@@ -9,6 +9,7 @@
 #include "SettingDlg.h"
 #include "..\common\macros.h"
 #include "ShellDlg.h"
+#include "SystemDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
