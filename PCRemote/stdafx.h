@@ -94,7 +94,11 @@ enum
 	UM_ICONNOTIFY= WM_USER+0x100,
 };
 
-
+typedef struct
+{
+	char *title;
+	int  nWidth;
+}COLUMNSTRUCT;
 
 #ifdef _UNICODE
 #if defined _M_IX86

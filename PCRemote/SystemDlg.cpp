@@ -8,12 +8,26 @@
 #include "..\common\macros.h"
 
 // CSystemDlg 对话框
+COLUMNSTRUCT g_Column_Process_Data[] =
+{
+	{"映像名称", 100},
+	{"PID",		 50},
+	{"程序路径", 400}
+};
+
+COLUMNSTRUCT g_Column_Windows_Data[] =
+{
+	{"PID",		 50},
+	{"窗口名称", 300}
+};
 
 IMPLEMENT_DYNAMIC(CSystemDlg, CDialogEx)
 
 CSystemDlg::CSystemDlg(CWnd* pParent, CIOCPServer* pIOCPServer, ClientContext *pContext)
 	: CDialogEx(CSystemDlg::IDD, pParent)
 {
+	m_bAsc = TRUE;
+	m_nSortCol = 2;
 	m_iocpServer = pIOCPServer;
 	m_pContext = pContext;
 	m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_SYSTEM));
@@ -39,13 +53,14 @@ BEGIN_MESSAGE_MAP(CSystemDlg, CDialogEx)
 	ON_COMMAND(IDM_KILLPROCESS, &CSystemDlg::OnKillprocess)
 	ON_COMMAND(IDM_REFRESHPSLIST, &CSystemDlg::OnRefreshpslist)
 	ON_NOTIFY(NM_RCLICK, IDC_LIST_PROCESS, &CSystemDlg::OnNMRClickListProcess)
+	ON_NOTIFY(LVN_COLUMNCLICK, IDC_LIST_PROCESS, &CSystemDlg::OnLvnColumnclickListProcess)
 END_MESSAGE_MAP()
 
 
 // CSystemDlg 消息处理程序
 
 
-void CSystemDlg::AdjustList(void)
+void CSystemDlg::AdjustList()
 {
 	if (m_list_process.m_hWnd==NULL)
 	{
@@ -56,9 +71,17 @@ void CSystemDlg::AdjustList(void)
 		return;
 	}
 
+	RECT rectTab;
 	RECT	rectClient;
 	RECT	rectList;
 	GetClientRect(&rectClient);
+
+	rectTab.left = 0;
+	rectTab.top = 10;
+	rectTab.right = rectClient.right;
+	rectTab.bottom = 29;
+	m_tab.MoveWindow(&rectTab);
+
 	rectList.left = 0;
 	rectList.top = 29;
 	rectList.right = rectClient.right;
@@ -66,6 +89,24 @@ void CSystemDlg::AdjustList(void)
 
 	m_list_process.MoveWindow(&rectList);
 	m_list_windows.MoveWindow(&rectList);
+
+	for (int i =0; i < 3; i++)
+	{
+		double dd = g_Column_Process_Data[i].nWidth;
+		dd /= m_ProcessListWidth;
+		dd *= rectClient.right;
+		int len = dd;
+		m_list_process.SetColumnWidth(i, len);
+	}
+
+	for (int i = 0; i < 2; i++)
+	{
+		double dd = g_Column_Windows_Data[i].nWidth;
+		dd /= m_WindowsListWidth;
+		dd *= rectClient.right;
+		int len = dd;
+		m_list_windows.SetColumnWidth(i, len);
+	}
 }
 
 
@@ -147,10 +188,12 @@ BOOL CSystemDlg::OnInitDialog()
 	m_list_process.InsertColumn(0, "映像名称", LVCFMT_LEFT, 100);
 	m_list_process.InsertColumn(1, "PID", LVCFMT_LEFT, 50);
 	m_list_process.InsertColumn(2, "程序路径", LVCFMT_LEFT, 400);
+	m_ProcessListWidth = 100 + 50 + 400;
 
 	m_list_windows.SetExtendedStyle(LVS_EX_FLATSB | LVS_EX_FULLROWSELECT);  //初始化 窗口管理的列表
 	m_list_windows.InsertColumn(0, "PID", LVCFMT_LEFT, 50);
 	m_list_windows.InsertColumn(1, "窗口名称", LVCFMT_LEFT, 300);
+	m_WindowsListWidth = 50 + 300;
 
 	AdjustList();			//调整列表大小
 	ShowProcessList();
@@ -200,7 +243,7 @@ void CSystemDlg::OnKillprocess()
 	else
 		return ;
 
-	LPBYTE pBuffer = (LPBYTE)LocalAlloc(LPTR, 1 + (pListCtrl->GetSelectedColumn() * sizeof(DWORD)));
+	LPBYTE pBuffer = (LPBYTE)LocalAlloc(LPTR, 1 + (pListCtrl->GetSelectedCount() * sizeof(DWORD)));
 	pBuffer[0] = COMMAND_KILLPROCESS;
 
 	//显示警告信息
@@ -275,4 +318,67 @@ void CSystemDlg::OnReceiveComplete(void)
 	default:
 		break;
 	}
+}
+
+
+void CSystemDlg::OnLvnColumnclickListProcess(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	if(pNMLV->iSubItem != 0 && pNMLV->iSubItem != 1)
+		return;
+
+	for(int i = 0; i < m_list_process.GetItemCount(); i++)
+		m_list_process.SetItemData(i ,i);
+
+	if (pNMLV->iSubItem == m_nSortCol)
+	{
+		m_bAsc = !m_bAsc;
+	} 
+	else
+	{
+		m_bAsc = TRUE;
+		m_nSortCol = pNMLV->iSubItem;
+	}
+
+	m_list_process.SortItems(&CSystemDlg::MyCompareProc, (DWORD)this);
+
+	*pResult = 0;
+}
+
+
+int CALLBACK CSystemDlg::MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
+{
+	CSystemDlg *pdlg = (CSystemDlg *)lParamSort;
+	int nCompRes;
+	switch (pdlg->m_nSortCol)
+	{
+	case 0:
+		{
+			CString strItem1 = pdlg->m_list_process.GetItemText(lParam1, 0);
+			CString strItem2 = pdlg->m_list_process.GetItemText(lParam2, 0);
+			nCompRes = strItem1.CompareNoCase(strItem2);
+		}
+		break;
+	case 1:
+		{
+			CString strItem1 = pdlg->m_list_process.GetItemText(lParam1, 1);
+			int nItem1 = atoi(strItem1);
+			CString strItem2 = pdlg->m_list_process.GetItemText(lParam2, 1);
+			int nItem2 = atoi(strItem2);
+
+			if(nItem1 == nItem2)
+				nCompRes = 0;
+			else
+				nCompRes = nItem1 > nItem2 ? 1 : -1;
+		}
+		break;
+	default:
+		break;
+	}
+
+	if(pdlg->m_bAsc)
+		return nCompRes;
+	else
+		return nCompRes*-1;
 }

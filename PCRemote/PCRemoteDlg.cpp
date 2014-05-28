@@ -17,11 +17,6 @@
 
 typedef void (WINAPI *PGNSI)(LPSYSTEM_INFO);
 
-typedef struct
-{
-	char *title;
-	int  nWidth;
-}COLUMNSTRUCT;
 
 COLUMNSTRUCT g_Column_Online_Data[] =
 {
