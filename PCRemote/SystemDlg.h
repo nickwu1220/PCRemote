@@ -48,4 +48,6 @@ public:
 	afx_msg void OnNMRClickListProcess(NMHDR *pNMHDR, LRESULT *pResult);
 	void OnReceiveComplete(void);
 	afx_msg void OnLvnColumnclickListProcess(NMHDR *pNMHDR, LRESULT *pResult);
+	void GetWindowsList(void);
+	void ShowWindowsList(void);
 };
