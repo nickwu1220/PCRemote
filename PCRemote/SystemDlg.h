@@ -9,7 +9,7 @@ class CSystemDlg : public CDialogEx
 	DECLARE_DYNAMIC(CSystemDlg)
 
 public:
-	CSystemDlg(CWnd* pParent = NULL, CIOCPServer* pIOCPServer = NULL, ClientContext *pContext = NULL);   // 标准构造函数
+	CSystemDlg(CWnd* pParent = NULL, CIOCPServer* pIOCPServer = NULL, ClientContext *pContext = NULL, BOOL bW = FALSE);   // 标准构造函数
 	virtual ~CSystemDlg();
 
 // 对话框数据
@@ -23,7 +23,7 @@ public:
 	CTabCtrl m_tab;
 	CListCtrl m_list_process;
 	CListCtrl m_list_windows;
-
+	BOOL bWindows;			//是否点击“窗口管理”工具栏。“窗口管理”和“进程管理”写在一个对话框里
 private:
 	HICON m_hIcon;
 	ClientContext* m_pContext;
@@ -33,6 +33,7 @@ private:
 
 	BOOL m_bAsc;			//列表数据升序排列
 	int m_nSortCol;
+	
 	static int CALLBACK MyCompareProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort); //排序比较函数
 public:
 	void AdjustList();

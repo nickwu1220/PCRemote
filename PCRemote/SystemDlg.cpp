@@ -23,13 +23,14 @@ COLUMNSTRUCT g_Column_Windows_Data[] =
 
 IMPLEMENT_DYNAMIC(CSystemDlg, CDialogEx)
 
-CSystemDlg::CSystemDlg(CWnd* pParent, CIOCPServer* pIOCPServer, ClientContext *pContext)
+CSystemDlg::CSystemDlg(CWnd* pParent, CIOCPServer* pIOCPServer, ClientContext *pContext, BOOL bW)
 	: CDialogEx(CSystemDlg::IDD, pParent)
 {
 	m_bAsc = TRUE;
 	m_nSortCol = 2;
 	m_iocpServer = pIOCPServer;
 	m_pContext = pContext;
+	bWindows = bW;
 	m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_SYSTEM));
 }
 
@@ -201,7 +202,15 @@ BOOL CSystemDlg::OnInitDialog()
 	m_WindowsListWidth = 50 + 300;
 
 	AdjustList();			//调整列表大小
+	
 	ShowProcessList();
+	if (bWindows)
+	{
+		m_tab.SetCurSel(1);
+		//ShowWindowsList();
+		//GetWindowsList();
+	}
+	
 	ShowSelectWindow();
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常: OCX 属性页应返回 FALSE

@@ -7,7 +7,7 @@
 #include "TrueColorToolBar.h"
 #include "include/IOCPServer.h"
 #include "SEU_QQwry.h"
-
+#include "SystemDlg.h"
 // CPCRemoteDlg 对话框
 class CPCRemoteDlg : public CDialogEx
 {
@@ -31,6 +31,8 @@ protected:
 	SEU_QQwry *m_QQwry;
 	CTrueColorToolBar m_ToolBar;
 	NOTIFYICONDATA nid;				//托盘
+	BOOL bWindows;					//是否点击“窗口管理”工具栏。“窗口管理”和“进程管理”写在一个对话框里
+	CSystemDlg *pWindlg;
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
