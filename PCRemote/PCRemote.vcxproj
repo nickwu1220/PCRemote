@@ -102,6 +102,7 @@
     <None Include="ReadMe.txt" />
     <None Include="res\bitmap1.bmp" />
     <None Include="res\cmdshell.ico" />
+    <None Include="res\dot.cur" />
     <None Include="res\PCRemote.ico" />
     <None Include="res\PCRemote.rc2" />
     <None Include="res\system.ico" />
@@ -117,6 +118,7 @@
     <ClInclude Include="PCRemote.h" />
     <ClInclude Include="PCRemoteDlg.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="ScreenSpyDlg.h" />
     <ClInclude Include="SettingDlg.h" />
     <ClInclude Include="SEU_QQwry.h" />
     <ClInclude Include="ShellDlg.h" />
@@ -132,6 +134,7 @@
     <ClCompile Include="IniFile.cpp" />
     <ClCompile Include="PCRemote.cpp" />
     <ClCompile Include="PCRemoteDlg.cpp" />
+    <ClCompile Include="ScreenSpyDlg.cpp" />
     <ClCompile Include="SettingDlg.cpp" />
     <ClCompile Include="SEU_QQwry.cpp" />
     <ClCompile Include="ShellDlg.cpp" />
