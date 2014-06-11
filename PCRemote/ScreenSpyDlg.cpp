@@ -80,6 +80,8 @@ void CScreenSpyDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialogEx)
 	ON_WM_CLOSE()
+	ON_WM_GETMINMAXINFO()
+	ON_WM_HSCROLL()
 END_MESSAGE_MAP()
 
 
@@ -211,4 +213,41 @@ void CScreenSpyDlg::OnClose()
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 
 	CDialogEx::OnClose();
+}
+
+
+void CScreenSpyDlg::OnGetMinMaxInfo(MINMAXINFO* lpMMI)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if(m_MMI.ptMaxSize.x > 0)
+		memcpy(lpMMI, &m_MMI, sizeof(MINMAXINFO));
+	CDialogEx::OnGetMinMaxInfo(lpMMI);
+}
+
+
+void CScreenSpyDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	SCROLLINFO si;
+	int i;
+	si.cbSize = sizeof(SCROLLINFO);
+	si.fMask = SIF_ALL;
+	GetScrollInfo(SB_HORZ, &si);
+
+	switch (nSBCode)
+	{
+	case SB_LINEUP:
+		i = nPos - 1;
+		break;
+	case SB_LINEDOWN:
+		i = nPos + 1;
+		break;
+	case SB_THUMBPOSITION:
+	case SB_THUMBTRACK:
+		i = si.nTrackPos;
+		break;
+	default:
+		return ;
+	}
+	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
 }

@@ -46,4 +46,6 @@ public:
 	afx_msg void OnClose();
 	void InitMMI(void);
 	void SendNext(void);
+	afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
+	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 };
