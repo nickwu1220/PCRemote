@@ -63,4 +63,5 @@ public:
 	void UpdateLocalClipboard(char *buf, int len);
 	bool SaveSnapshot(void);
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
+	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 };

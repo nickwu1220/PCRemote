@@ -84,6 +84,7 @@ BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialogEx)
 	ON_WM_HSCROLL()
 	ON_WM_PAINT()
 	ON_WM_SYSCOMMAND()
+	ON_WM_VSCROLL()
 END_MESSAGE_MAP()
 
 
@@ -282,6 +283,49 @@ void CScreenSpyDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 
 	PostMessage(WM_PAINT);
 	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
+}
+
+
+void CScreenSpyDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	SCROLLINFO si;
+	int i;
+	si.cbSize = sizeof(SCROLLINFO);
+	si.fMask = SIF_ALL;
+	GetScrollInfo(SB_VERT, &si);
+
+	switch (nSBCode)
+	{
+	case SB_LINEUP:
+		i = nPos - 1;
+		break;
+	case SB_LINEDOWN:
+		i = nPos + 1;
+		break;
+	case SB_THUMBPOSITION:
+	case SB_THUMBTRACK:
+		i = si.nTrackPos;
+		break;
+	default:
+		return ;
+	}
+
+	i = max(i, si.nMin);
+	i = min(i, (int)(si.nMax - si.nPage + 1));
+
+	RECT rect;
+	GetClientRect(&rect);
+
+	if ((rect.right + i) > m_lpbmi->bmiHeader.biHeight)
+		i = m_lpbmi->bmiHeader.biHeight - rect.bottom;
+
+	InterlockedExchange((PLONG)&m_VScrollPos, i);
+
+	SetScrollPos(SB_VERT, m_VScrollPos);
+
+	PostMessage(WM_PAINT);
+	CDialogEx::OnVScroll(nSBCode, nPos, pScrollBar);
 }
 
 
@@ -871,3 +915,7 @@ void CScreenSpyDlg::SendResetAlgorithm(UINT nAlgorithm)
 	bBuff[1] = nAlgorithm;
 	m_iocpServer->Send(m_pContext, bBuff, sizeof(bBuff));
 }
+
+
+
+
