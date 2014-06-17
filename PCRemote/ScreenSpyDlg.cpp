@@ -317,7 +317,7 @@ void CScreenSpyDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	RECT rect;
 	GetClientRect(&rect);
 
-	if ((rect.right + i) > m_lpbmi->bmiHeader.biHeight)
+	if ((rect.bottom + i) > m_lpbmi->bmiHeader.biHeight)
 		i = m_lpbmi->bmiHeader.biHeight - rect.bottom;
 
 	InterlockedExchange((PLONG)&m_VScrollPos, i);
@@ -831,7 +831,7 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 		}
 		break;
 	default:
-		CDialog::OnSysCommand(nID, lParam);
+		break;
 	}
 	CDialogEx::OnSysCommand(nID, lParam);
 }
