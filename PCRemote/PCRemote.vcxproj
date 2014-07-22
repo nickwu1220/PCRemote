@@ -110,6 +110,8 @@
     <None Include="res\ToolBar_Main.bmp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FileManagerDlg.h" />
+    <ClInclude Include="FileTransferModeDlg.h" />
     <ClInclude Include="include\Buffer.h" />
     <ClInclude Include="include\CpuUsage.h" />
     <ClInclude Include="include\IOCPServer.h" />
@@ -128,6 +130,8 @@
     <ClInclude Include="TrueColorToolBar.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FileManagerDlg.cpp" />
+    <ClCompile Include="FileTransferModeDlg.cpp" />
     <ClCompile Include="include\Buffer.cpp" />
     <ClCompile Include="include\CpuUsage.cpp" />
     <ClCompile Include="include\IOCPServer.cpp" />
