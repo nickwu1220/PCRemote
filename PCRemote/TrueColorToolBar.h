@@ -1,14 +1,33 @@
-#if !defined(AFX_TRUECOLORTOOLBAR_H__4D431A79_0E34_4E0C_BE1C_387E90FCA1F3__INCLUDED_)
-#define AFX_TRUECOLORTOOLBAR_H__4D431A79_0E34_4E0C_BE1C_387E90FCA1F3__INCLUDED_
+/***=========================================================================
+====                                                                     ====
+====                          D C U t i l i t y                          ====
+====                                                                     ====
+=============================================================================
+====                                                                     ====
+====    File name           :  TrueColorToolBar.h                        ====
+====    Project name        :  Tester                                    ====
+====    Project number      :  ---                                       ====
+====    Creation date       :  13/1/2003                                 ====
+====    Author(s)           :  Dany Cantin                               ====
+====                                                                     ====
+====                  Copyright ?DCUtility  2003                        ====
+====                                                                     ====
+=============================================================================
+===========================================================================*/
+
+
+#ifndef TRUECOLORTOOLBAR_H_
+#define TRUECOLORTOOLBAR_H_
 
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
-// TrueColorToolBar.h : header file
-//
+
+
+#include <afxtempl.h>
 
 /////////////////////////////////////////////////////////////////////////////
-// CTrueColorToolBar window
+// CTrueColorToolBar
 
 class CTrueColorToolBar : public CToolBar
 {
@@ -18,19 +37,30 @@ public:
 
 // Attributes
 private:
+	BOOL m_bDropDown;
 
+	struct stDropDownInfo {
+	public:
+		UINT  uButtonID;
+		UINT  uMenuID;
+		CWnd* pParent;
+	};
+	
+	CArray <stDropDownInfo, stDropDownInfo&> m_lstDropDownButton;
 	
 // Operations
 public:
-	BOOL LoadTrueColorToolBar(int nBtnWidth,
+	BOOL LoadTrueColorToolBar(int  nBtnWidth,
 							  UINT uToolBar,
-							  UINT uToolBarHot,
+							  UINT uToolBarHot		= 0,
 							  UINT uToolBarDisabled = 0);
+
+	void AddDropDownButton(CWnd* pParent, UINT uButtonID, UINT uMenuID);
 
 private:
 	BOOL SetTrueColorToolBar(UINT uToolBarType,
 		                     UINT uToolBar,
-						     int nBtnWidth);
+						     int  nBtnWidth);
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -44,7 +74,7 @@ public:
 	// Generated message map functions
 protected:
 	//{{AFX_MSG(CTrueColorToolBar)
-		// NOTE - the ClassWizard will add and remove member functions here.
+	afx_msg void OnToolbarDropDown(NMHDR * pnmh, LRESULT* plRes);
 	//}}AFX_MSG
 
 	DECLARE_MESSAGE_MAP()
@@ -55,4 +85,4 @@ protected:
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
 
-#endif // !defined(AFX_TRUECOLORTOOLBAR_H__4D431A79_0E34_4E0C_BE1C_387E90FCA1F3__INCLUDED_)
+#endif // TRUECOLORTOOLBAR_H_

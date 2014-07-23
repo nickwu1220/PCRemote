@@ -84,4 +84,14 @@ public:
 	CListCtrl m_list_remote;
 	CListCtrl m_list_local;
 	virtual BOOL OnInitDialog();
+
+protected:
+	CListCtrl *m_pDragList;			//Which ListCtrl we are dragging FROM
+	CListCtrl *m_pDropList;			//Which ListCtrl we are dropping ON
+	BOOL m_bDragging;
+	int			m_nDragIndex;	//Index of selected item in the List we are dragging FROM
+	int			m_nDropIndex;	//Index at which to drop item in the List we are dropping ON
+	CWnd*		m_pDropWnd;		//Pointer to window we are dropping on (will be cast to CListCtrl* type)
+public:
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 };
