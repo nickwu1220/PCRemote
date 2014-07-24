@@ -94,4 +94,5 @@ protected:
 	CWnd*		m_pDropWnd;		//Pointer to window we are dropping on (will be cast to CListCtrl* type)
 public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnNMDblclkListLocal(NMHDR *pNMHDR, LRESULT *pResult);
 };

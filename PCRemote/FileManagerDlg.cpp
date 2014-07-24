@@ -93,11 +93,29 @@ void CFileManagerDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CFileManagerDlg, CDialogEx)
 	ON_WM_SIZE()
+	ON_NOTIFY(NM_DBLCLK, IDC_LIST_LOCAL, &CFileManagerDlg::OnNMDblclkListLocal)
 END_MESSAGE_MAP()
 
 
 // CFileManagerDlg 消息处理程序
 
+int GetIconIndex(LPCTSTR lpFileName, DWORD dwFileAttributes)
+{
+	SHFILEINFO sfi;
+	if(dwFileAttributes == INVALID_FILE_ATTRIBUTES)
+		dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
+	else
+		dwFileAttributes |= FILE_ATTRIBUTE_NORMAL;
+
+	SHGetFileInfo(
+		lpFileName,
+		dwFileAttributes,
+		&sfi,
+		sizeof(SHFILEINFO),
+		SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES);
+
+	return sfi.iIcon;
+}
 
 BOOL CFileManagerDlg::OnInitDialog()
 {
@@ -244,7 +262,130 @@ void CFileManagerDlg::FixedLocalDriveList()
 	for (int i = 0; *pDrive != '\0'; i++, pDrive += lstrlen(pDrive) + 1)
 	{
 		memset(szFileSystem, 0, sizeof(szFileSystem));
-		GetVolumeInformation
+		GetVolumeInformation(pDrive, NULL, 0, NULL, NULL, NULL, szFileSystem, MAX_PATH);
+		int nFileSystemLen = lstrlen(szFileSystem) + 1;
+
+		if (GetDiskFreeSpaceEx(pDrive, (PULARGE_INTEGER)&HDFreeSpace, (PULARGE_INTEGER)&HDTotalSpace, NULL))
+		{
+			TotalMB = HDTotalSpace / 1024 /1024;
+			FreeMB  = HDFreeSpace / 1024 / 1024;
+		}
+		else
+		{
+			TotalMB = 0;
+			FreeMB  = 0;
+		}
+
+		int nItem = m_list_local.InsertItem(i, pDrive, GetIconIndex(pDrive, GetFileAttributes(pDrive)));
+		m_list_local.SetItemData(nItem, 1);
+		if (lstrlen(szFileSystem) == 0)
+		{
+			SHFILEINFO sfi;
+			SHGetFileInfo(pDrive, FILE_ATTRIBUTE_NORMAL, &sfi,sizeof(SHFILEINFO), SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES);
+			m_list_local.SetItemText(nItem, 1, sfi.szTypeName);
+		} 
+		else
+		{
+			m_list_local.SetItemText(nItem, 1, szFileSystem);
+		}
+
+		CString str;
+		str.Format("%10.1f GB", (float)TotalMB / 1024);
+		m_list_local.SetItemText(nItem, 2, str);
+		str.Format("%10.1f GB", (float)FreeMB / 1024);
+		m_list_local.SetItemText(nItem, 3, str);
 	}
 
+	//重置本地当前路径
+	m_list_local = "";
+	m_Local_Directory_ComboBox.ResetContent();
+}
+
+void CFileManagerDlg::OnNMDblclkListLocal(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	//LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	if(m_list_local.GetSelectedCount() == 0 || m_list_local.GetItemData(m_list_local.GetSelectionMark()) != 1)
+		return ;
+	FixedLocalFileList();
+	*pResult = 0;
+
+}
+
+void CFileManagerDlg::FixedLocalFileList(CString directory /* = "" */)
+{
+	if (directory.GetLength() == 0)
+	{
+		int nItem = m_list_local.GetSelectionMark();
+
+		if (nItem != -1)
+		{
+			if (m_list_local.GetItemData(nItem) == 1)	//如有有选中，并且是目前
+				directory = m_list_local.GetItemText(nItem, 0);
+		} 
+		else
+		{
+			m_Local_Directory_ComboBox.GetWindowText(m_Local_Path);
+		}
+	}
+
+	//获取父目录
+	if (directory == "..")
+	{
+		m_Local_Path = GetParentDirectory(m_Local_Path);
+	}
+	else if (directory != ".")		//不是刷新当前目录
+	{
+		m_Local_Path += directory;
+		if(m_Local_Path.Right(1) != "\\")
+			m_Local_Path += "\\";
+	}
+
+	//if是驱动器的根目录，返回磁盘列表
+	if (m_Local_Path.GetLength() == 0)
+	{
+		FixedLocalDriveList();
+		return ;
+	}
+
+	m_Local_Directory_ComboBox.InsertString(0, m_Local_Path);
+	m_Local_Directory_ComboBox.SetCurSel(0);
+
+	//重建列标题
+	m_list_local.DeleteAllItems();
+	while(m_list_local.DeleteColumn(0));
+
+	m_list_local.InsertColumn(0, "名称", LVCFMT_LEFT, 200);
+	m_list_local.InsertColumn(1, "大小", LVCFMT_LEFT, 100);
+	m_list_local.InsertColumn(2, "类型", LVCFMT_LEFT, 100);
+	m_list_local.InsertColumn(3, "修改日期", LVCFMT_LEFT, 115);
+
+	int nItemIndex = 0;
+	m_list_local.SetItemData(
+		m_list_local.InsertItem(nItemIndex++, "..", GetIconIndex(NULL, FILE_ATTRIBUTE_NORMAL)),
+		1);
+
+
+}
+
+CString CFileManagerDlg::GetParentDirectory(CString strPath)
+{
+	int Index = strPath.ReverseFind('\\');
+	if (Index == -1)
+	{
+		return strPath;
+	}
+	CString str = strPath.Left(Index);
+	Index = str.ReverseFind('\\');
+	if (Index == -1)
+	{
+		strPath = "";
+		return strPath;
+	}
+	strPath = str.Left(Index);
+
+	if(strPath.Right(1) != "\\")
+		strPath += "\\";
+
+	return strPath;
 }
