@@ -58,11 +58,11 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, Client
 	m_iocpServer = pIOCPServer;
 	m_pContext = pContext;
 	sockaddr_in sockAddr;
-	int nSockAddrLen = sizeof(sockaddr_in)
+	int nSockAddrLen = sizeof(sockaddr_in);
 	memset(&sockAddr, 0, nSockAddrLen);
 
 	//得到连接客户端的IP
-	int nResult = getpeername(m_pContext->m_Socket, (SOCKADDR*)&sockAddr, nSockAddrLen);
+	int nResult = getpeername(m_pContext->m_Socket, (SOCKADDR*)&sockAddr, &nSockAddrLen);
 	m_IPAddress = (nResult != SOCKET_ERROR) ? inet_ntoa(sockAddr.sin_addr) : "";
 
 	memset(m_bRemoteDriveList, 0, sizeof(m_bRemoteDriveList));
@@ -130,8 +130,8 @@ BOOL CFileManagerDlg::OnInitDialog()
 
 	//为真彩工具条添加代码
 	if (!m_wndToolBar_Local.Create(this, WS_CHILD |
-		WS_VISIBLE | CBRS_ALIGN_ANY | CBRS_TOOLTIPS | CBRS_FLYBY)) ||
-		!m_wndToolBar_Local.LoadToolBar(IDR_TOOLBAR1)
+		WS_VISIBLE | CBRS_ALIGN_ANY | CBRS_TOOLTIPS | CBRS_FLYBY, ID_LOCAL_TOOLBAR) 
+		||!m_wndToolBar_Local.LoadToolBar(IDR_TOOLBAR1))
 	{
 		TRACE0("Failed to create toolbar");
 		return FALSE;
@@ -139,7 +139,7 @@ BOOL CFileManagerDlg::OnInitDialog()
 	m_wndToolBar_Local.ModifyStyle(0, TBSTYLE_FLAT);
 	m_wndToolBar_Local.LoadTrueColorToolBar(
 		24,
-		IDB_TOOLBAR_ENABLE,
+		IDB_TOOLBAR_DISABLE,
 		IDB_TOOLBAR_ENABLE,
 		IDB_TOOLBAR_DISABLE);
 	// 添加下拉按钮
@@ -147,8 +147,8 @@ BOOL CFileManagerDlg::OnInitDialog()
 
 
 	if (!m_wndToolBar_Remote.Create(this, WS_CHILD |
-		WS_VISIBLE | CBRS_ALIGN_ANY | CBRS_TOOLTIPS | CBRS_FLYBY)) ||
-		!m_wndToolBar_Remote.LoadToolBar(IDR_TOOLBAR1)
+		WS_VISIBLE | CBRS_ALIGN_ANY | CBRS_TOOLTIPS | CBRS_FLYBY, ID_REMOTE_TOOLBAR) 
+		||!m_wndToolBar_Remote.LoadToolBar(IDR_TOOLBAR2))
 	{
 		TRACE0("Failed to create toolbar");
 		return FALSE;
@@ -160,7 +160,7 @@ BOOL CFileManagerDlg::OnInitDialog()
 		IDB_TOOLBAR_ENABLE,
 		IDB_TOOLBAR_DISABLE);
 	// 添加下拉按钮
-	m_wndToolBar_Remote.AddDropDownButton(this, IDT_LOCAL_VIEW, IDR_LOCAL_VIEW);
+	m_wndToolBar_Remote.AddDropDownButton(this, IDT_REMOTE_VIEW, IDR_REMOTE_VIEW);
 
 	//显示工具栏
 	m_wndToolBar_Local.MoveWindow(268, 0, rect.right - 268, 48);
@@ -197,7 +197,7 @@ BOOL CFileManagerDlg::OnInitDialog()
 	//初始化本地驱动器列表并将显示本地驱动器列表
 	FixedLocalDriveList();
 	//初始化客户端驱动器列表并将显示客户端驱动器列表
-	FixedRmoteDriveList();
+	//FixedRmoteDriveList();
 
 	m_bDragging = FALSE;
 	m_nDragIndex = -1;
@@ -297,7 +297,7 @@ void CFileManagerDlg::FixedLocalDriveList()
 	}
 
 	//重置本地当前路径
-	m_list_local = "";
+	m_Local_Path = "";
 	m_Local_Directory_ComboBox.ResetContent();
 }
 
@@ -365,7 +365,42 @@ void CFileManagerDlg::FixedLocalFileList(CString directory /* = "" */)
 		m_list_local.InsertItem(nItemIndex++, "..", GetIconIndex(NULL, FILE_ATTRIBUTE_NORMAL)),
 		1);
 
+	//i为0时列目录，i为1时列文件
+	for (int i = 0; i < 2; i++)
+	{
+		CFileFind finder;
+		BOOL bContinue;
+		bContinue = finder.FindFile(m_Local_Path + "*.*");
+		while(bContinue)
+		{
+			bContinue = finder.FindNextFile();
+			if(finder.IsDots())
+				continue;
+			
+			BOOL bIsInsert = (!finder.IsDirectory() == i);
 
+			if(!bIsInsert)
+				continue;
+
+			int nItem = m_list_local.InsertItem(nItemIndex++, finder.GetFileName(), 
+				GetIconIndex(finder.GetFilePath(), GetFileAttributes(finder.GetFilePath())));
+			m_list_local.SetItemData(nItem, finder.IsDirectory());
+			SHFILEINFO sfi;
+			SHGetFileInfo(finder.GetFilePath(), 0, &sfi, sizeof(SHFILEINFO), SHGFI_TYPENAME);
+			m_list_local.SetItemText(nItem, 2, sfi.szTypeName);
+
+			CString str;
+			if(i)
+			{
+				str.Format("%10d KB", finder.GetLength() / 1024 + (finder.GetLength() % 1024 ? 1 : 0));
+				m_list_local.SetItemText(nItem, 1, str);
+			}
+			CTime time;
+			finder.GetLastWriteTime(time);
+			m_list_local.SetItemText(nItem, 3, time.Format("%Y-%m-%d %H:%M"));
+
+		}
+	}
 }
 
 CString CFileManagerDlg::GetParentDirectory(CString strPath)

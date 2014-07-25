@@ -74,6 +74,7 @@ public:
 	afx_msg LRESULT OnOpenShellDialog(WPARAM, LPARAM);					//打开终端命令对话框
 	afx_msg LRESULT OnOpenSystemDialog(WPARAM wParam, LPARAM lParam);   //打开进程管理对话框
 	afx_msg	LRESULT OnOpenScreenSpyDialog(WPARAM, LPARAM);				//打开远程桌面对话框
+	afx_msg LRESULT OnOpenManagerDialog(WPARAM , LPARAM );				//打开文件管理对话框
 
 	void CreateStatusBar(void);
 	void CreateToolBar(void);
