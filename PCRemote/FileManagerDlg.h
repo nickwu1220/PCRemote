@@ -92,7 +92,17 @@ protected:
 	int			m_nDragIndex;	//Index of selected item in the List we are dragging FROM
 	int			m_nDropIndex;	//Index at which to drop item in the List we are dropping ON
 	CWnd*		m_pDropWnd;		//Pointer to window we are dropping on (will be cast to CListCtrl* type)
+
+	void DropItemOnList(CListCtrl* pDragList, CListCtrl* pDropList);
 public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnNMDblclkListLocal(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnRemoteCopy();
+	afx_msg void OnUpdateRemoteCopy(CCmdUI *pCmdUI);
+	afx_msg void OnLocalCopy();
+	afx_msg void OnUpdateLocalCopy(CCmdUI *pCmdUI);
+	afx_msg void OnBegindragListLocal(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBegindragListRemote(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 };

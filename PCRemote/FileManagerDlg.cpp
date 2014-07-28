@@ -94,6 +94,14 @@ void CFileManagerDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CFileManagerDlg, CDialogEx)
 	ON_WM_SIZE()
 	ON_NOTIFY(NM_DBLCLK, IDC_LIST_LOCAL, &CFileManagerDlg::OnNMDblclkListLocal)
+	ON_COMMAND(IDT_REMOTE_COPY, &CFileManagerDlg::OnRemoteCopy)
+	ON_UPDATE_COMMAND_UI(IDT_REMOTE_COPY, &CFileManagerDlg::OnUpdateRemoteCopy)
+	ON_COMMAND(IDT_LOCAL_COPY, &CFileManagerDlg::OnLocalCopy)
+	ON_UPDATE_COMMAND_UI(IDT_LOCAL_COPY, &CFileManagerDlg::OnUpdateLocalCopy)
+	ON_NOTIFY(LVN_BEGINDRAG, IDC_LIST_LOCAL, &CFileManagerDlg::OnBegindragListLocal)
+	ON_NOTIFY(LVN_BEGINDRAG, IDC_LIST_REMOTE, &CFileManagerDlg::OnBegindragListRemote)
+	ON_WM_MOUSEMOVE()
+	ON_WM_LBUTTONUP()
 END_MESSAGE_MAP()
 
 
@@ -423,4 +431,121 @@ CString CFileManagerDlg::GetParentDirectory(CString strPath)
 		strPath += "\\";
 
 	return strPath;
+}
+
+void CFileManagerDlg::DropItemOnList(CListCtrl* pDragList, CListCtrl* pDropList)
+{
+	if(pDragList == pDropList)
+		return ;
+
+	pDropList->SetItemState(m_nDropIndex, 0, LVIS_DROPHILITED);
+
+	if (pDropList == &m_list_local)
+	{
+		OnRemoteCopy();
+	} 
+	else if(pDropList == &m_list_remote)
+	{
+		OnLocalCopy();
+	}
+	else
+	{
+		//不可能
+		return ;
+	}
+
+	m_nDropIndex = -1;
+}
+
+void CFileManagerDlg::OnRemoteCopy()
+{
+	// TODO: 在此添加命令处理程序代码
+}
+
+
+void CFileManagerDlg::OnUpdateRemoteCopy(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+}
+
+
+void CFileManagerDlg::OnLocalCopy()
+{
+	// TODO: 在此添加命令处理程序代码
+}
+
+
+void CFileManagerDlg::OnUpdateLocalCopy(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+}
+
+
+void CFileManagerDlg::OnBegindragListLocal(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	m_nDragIndex = pNMLV->iItem;
+
+	if(m_list_local.GetItemText(m_nDragIndex, 0) == "..")
+		return ;
+
+	if(m_list_local.GetSelectedColumn() > 1)
+		m_hCursor = AfxGetApp()->LoadCursor(IDC_MUTI_DRAG);
+	else
+		m_hCursor = AfxGetApp()->LoadCursor(IDC_DRAG);
+
+	ASSERT(m_hCursor);
+
+	m_bDragging = TRUE;
+	m_nDropIndex = -1;
+	m_pDragList = &m_list_local;
+	m_pDropList = &m_list_local;
+
+	//捕获所有的鼠标消息
+	SetCapture();
+	*pResult = 0;
+}
+
+
+void CFileManagerDlg::OnBegindragListRemote(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMLISTVIEW pNMLV = reinterpret_cast<LPNMLISTVIEW>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	m_nDragIndex = pNMLV->iItem;
+
+	if(m_list_remote.GetItemText(m_nDragIndex, 0) == "..")
+		return ;
+
+	if(m_list_remote.GetSelectedColumn() > 1)
+		m_hCursor = AfxGetApp()->LoadCursor(IDC_MUTI_DRAG);
+	else
+		m_hCursor = AfxGetApp()->LoadCursor(IDC_DRAG);
+
+	ASSERT(m_hCursor);
+
+	m_bDragging = TRUE;
+	m_nDropIndex = -1;
+	m_pDragList = &m_list_remote;
+	m_pDropList = &m_list_remote;
+
+	//捕获所有的鼠标消息
+	SetCapture();
+	*pResult = 0;
+}
+
+
+void CFileManagerDlg::OnMouseMove(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+
+	CDialogEx::OnMouseMove(nFlags, point);
+}
+
+
+void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+
+	CDialogEx::OnLButtonUp(nFlags, point);
 }
