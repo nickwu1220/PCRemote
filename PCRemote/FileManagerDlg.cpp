@@ -500,7 +500,7 @@ void CFileManagerDlg::OnBegindragListLocal(NMHDR *pNMHDR, LRESULT *pResult)
 	m_bDragging = TRUE;
 	m_nDropIndex = -1;
 	m_pDragList = &m_list_local;
-	m_pDropList = &m_list_local;
+	m_pDropWnd = &m_list_local;
 
 	//捕获所有的鼠标消息
 	SetCapture();
@@ -527,7 +527,7 @@ void CFileManagerDlg::OnBegindragListRemote(NMHDR *pNMHDR, LRESULT *pResult)
 	m_bDragging = TRUE;
 	m_nDropIndex = -1;
 	m_pDragList = &m_list_remote;
-	m_pDropList = &m_list_remote;
+	m_pDropWnd = &m_list_remote;
 
 	//捕获所有的鼠标消息
 	SetCapture();
@@ -538,7 +538,71 @@ void CFileManagerDlg::OnBegindragListRemote(NMHDR *pNMHDR, LRESULT *pResult)
 void CFileManagerDlg::OnMouseMove(UINT nFlags, CPoint point)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if (m_bDragging)
+	{
+		CPoint pt(point);
+		ClientToScreen(&pt);
 
+		//// Get the CWnd pointer of the window that is under the mouse cursor
+		CWnd *pDropWnd = WindowFromPoint(pt);
+		ASSERT(pDropWnd);
+
+		// If we drag outside current window we need to adjust the highlights displayed
+		if (pDropWnd != m_pDropWnd)
+		{
+			if (m_nDropIndex != -1)//鼠标之前曾一定到过DropList里，所以m_nDropIndex得到具体的位置过，该位置项被设置高亮，之后鼠标移出DropList，需要把之前设置的高亮项取消掉	
+			{
+				CListCtrl *pList = (CListCtrl*)m_pDropWnd;
+				VERIFY(pList->SetItemState(m_nDropIndex, 0, LVIS_DROPHILITED));
+				// redraw item
+				VERIFY(pList->RedrawItems(m_nDropIndex, m_nDropIndex));
+				pList->UpdateWindow();
+				m_nDropIndex = -1;
+			}
+		}
+
+		// Save current window pointer as the CListCtrl we are dropping onto
+		m_pDropWnd = pDropWnd;
+
+		// Convert from screen coordinates to drop target client coordinates
+		pDropWnd->ScreenToClient(&pt);
+
+		// if window is CListCtrl
+		if (pDropWnd->IsKindOf(RUNTIME_CLASS(CListCtrl)))
+		{
+			//Note that we can drop here
+			SetCursor(m_hCursor);
+
+			if(m_pDropWnd->m_hWnd == m_pDragList->m_hWnd)
+				return ;
+
+			UINT uFlags;
+			CListCtrl *pList = (CListCtrl*)pDropWnd;
+
+			// Turn off hilight for previous drop target
+			pList->SetItemState(m_nDropIndex, 0, LVIS_DROPHILITED);
+			// Redraw previous item
+			pList->RedrawItems(m_nDropIndex, m_nDropIndex);
+
+			// Get the item that is below cursor
+			m_nDropIndex = ((CListCtrl*)pDropWnd)->HitTest(pt, &uFlags);
+
+			if (m_nDropIndex != -1)
+			{
+				// Highlight it
+				pList->SetItemState(m_nDropIndex, LVIS_DROPHILITED, LVIS_DROPHILITED);
+				// Redraw item
+				pList->RedrawItems(m_nDropIndex, m_nDropIndex);
+				pList->UpdateWindow();
+			}
+		}
+		else
+		{
+			//If we are not hovering over a CListCtrl, change the cursor
+			// to note that we cannot drop here
+			SetCursor(LoadCursor(NULL, IDC_NO));
+		}
+	}
 	CDialogEx::OnMouseMove(nFlags, point);
 }
 
@@ -546,6 +610,24 @@ void CFileManagerDlg::OnMouseMove(UINT nFlags, CPoint point)
 void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if (m_bDragging)
+	{
+		// release mouse capture
+		ReleaseCapture();
 
+		m_bDragging = FALSE;
+
+		CPoint pt(point);
+		ClientToScreen(&pt);
+
+		CWnd *pDropWnd = WindowFromPoint(pt);
+		ASSERT(pDropWnd);
+
+		if (pDropWnd->IsKindOf(RUNTIME_CLASS(CListCtrl)))
+		{
+			m_pDragList = (CListCtrl *)pDropWnd;
+			DropItemOnList(m_pDragList, m_pDropWnd);
+		}
+	}
 	CDialogEx::OnLButtonUp(nFlags, point);
 }
