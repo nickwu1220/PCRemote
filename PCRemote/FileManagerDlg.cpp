@@ -106,6 +106,30 @@ BEGIN_MESSAGE_MAP(CFileManagerDlg, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, IDC_LIST_REMOTE, &CFileManagerDlg::OnDblclkListRemote)
 	ON_COMMAND(IDT_LOCAL_PREV, &CFileManagerDlg::OnLocalPrev)
 	ON_UPDATE_COMMAND_UI(IDT_LOCAL_PREV, &CFileManagerDlg::OnUpdateLocalPrev)
+	ON_COMMAND(IDT_REMOTE_PREV, &CFileManagerDlg::OnRemotePrev)
+	ON_UPDATE_COMMAND_UI(IDT_REMOTE_PREV, &CFileManagerDlg::OnUpdateRemotePrev)
+	ON_COMMAND(IDT_LOCAL_VIEW, &CFileManagerDlg::OnLocalView)
+	ON_COMMAND(IDM_LOCAL_LIST, &CFileManagerDlg::OnLocalList)
+	ON_COMMAND(IDM_LOCAL_REPORT, &CFileManagerDlg::OnLocalReport)
+	ON_COMMAND(IDM_LOCAL_BIGICON, &CFileManagerDlg::OnLocalBigicon)
+	ON_COMMAND(IDM_LOCAL_SMALLICON, &CFileManagerDlg::OnLocalSmallicon)
+	ON_COMMAND(IDM_REMOTE_LIST, &CFileManagerDlg::OnRemoteList)
+	ON_COMMAND(IDM_REMOTE_REPORT, &CFileManagerDlg::OnRemoteReport)
+	ON_COMMAND(IDM_REMOTE_BIGICON, &CFileManagerDlg::OnRemoteBigicon)
+	ON_COMMAND(IDM_REMOTE_SMALLICON, &CFileManagerDlg::OnRemoteSmallicon)
+	ON_COMMAND(IDT_REMOTE_VIEW, &CFileManagerDlg::OnRemoteView)
+	ON_COMMAND(IDT_LOCAL_DELETE, &CFileManagerDlg::OnLocalDelete)
+	ON_UPDATE_COMMAND_UI(IDT_LOCAL_DELETE, &CFileManagerDlg::OnUpdateLocalDelete)
+	ON_COMMAND(IDT_LOCAL_NEWFOLDER, &CFileManagerDlg::OnLocalNewfolder)
+	ON_UPDATE_COMMAND_UI(IDT_LOCAL_NEWFOLDER, &CFileManagerDlg::OnUpdateLocalNewfolder)
+	ON_COMMAND(IDT_LOCAL_STOP, &CFileManagerDlg::OnLocalStop)
+	ON_UPDATE_COMMAND_UI(IDT_LOCAL_STOP, &CFileManagerDlg::OnUpdateLocalStop)
+	ON_COMMAND(IDT_REMOTE_DELETE, &CFileManagerDlg::OnRemoteDelete)
+	ON_UPDATE_COMMAND_UI(IDT_REMOTE_DELETE, &CFileManagerDlg::OnUpdateRemoteDelete)
+	ON_COMMAND(IDT_REMOTE_NEWFOLDER, &CFileManagerDlg::OnRemoteNewfolder)
+	ON_UPDATE_COMMAND_UI(IDT_REMOTE_NEWFOLDER, &CFileManagerDlg::OnUpdateRemoteNewfolder)
+	ON_COMMAND(IDT_REMOTE_STOP, &CFileManagerDlg::OnRemoteStop)
+	ON_UPDATE_COMMAND_UI(IDT_REMOTE_STOP, &CFileManagerDlg::OnUpdateRemoteStop)
 END_MESSAGE_MAP()
 
 
@@ -918,10 +942,168 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
 void CFileManagerDlg::OnLocalPrev()
 {
 	// TODO: 在此添加命令处理程序代码
+	FixedLocalFileList("..");
+}
+
+//为根目录时禁用向上按钮
+void CFileManagerDlg::OnUpdateLocalPrev(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_Local_Path.GetLength() && m_list_local.IsWindowEnabled());
 }
 
 
-void CFileManagerDlg::OnUpdateLocalPrev(CCmdUI *pCmdUI)
+void CFileManagerDlg::OnRemotePrev()
+{
+	// TODO: 在此添加命令处理程序代码
+	FixedRemoteFileList("..");
+}
+
+//为根目录时禁用向上按钮
+void CFileManagerDlg::OnUpdateRemotePrev(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_Remote_Path.GetLength() && m_list_remote.IsWindowEnabled());
+}
+
+
+void CFileManagerDlg::OnLocalView()
+{
+	// TODO: 在此添加命令处理程序代码
+	m_list_local.ModifyStyle(LVS_TYPEMASK, LVS_ICON);
+}
+
+
+void CFileManagerDlg::OnLocalList()
+{
+	// TODO: 在此添加命令处理程序代码
+	m_list_local.ModifyStyle(LVS_TYPEMASK, LVS_LIST);
+}
+
+
+void CFileManagerDlg::OnLocalReport()
+{
+	// TODO: 在此添加命令处理程序代码
+	m_list_local.ModifyStyle(LVS_TYPEMASK, LVS_REPORT);
+}
+
+
+void CFileManagerDlg::OnLocalBigicon()
+{
+	// TODO: 在此添加命令处理程序代码
+	m_list_local.ModifyStyle(LVS_TYPEMASK, LVS_ICON);
+}
+
+
+void CFileManagerDlg::OnLocalSmallicon()
+{
+	// TODO: 在此添加命令处理程序代码
+	m_list_local.ModifyStyle(LVS_TYPEMASK, LVS_SMALLICON);
+}
+
+
+void CFileManagerDlg::OnRemoteList()
+{
+	// TODO: 在此添加命令处理程序代码
+	m_list_remote.ModifyStyle(LVS_TYPEMASK, LVS_LIST);
+}
+
+
+void CFileManagerDlg::OnRemoteReport()
+{
+	// TODO: 在此添加命令处理程序代码
+	m_list_remote.ModifyStyle(LVS_TYPEMASK, LVS_REPORT);
+}
+
+
+void CFileManagerDlg::OnRemoteBigicon()
+{
+	// TODO: 在此添加命令处理程序代码
+	m_list_remote.ModifyStyle(LVS_TYPEMASK, LVS_ICON);
+}
+
+
+void CFileManagerDlg::OnRemoteSmallicon()
+{
+	// TODO: 在此添加命令处理程序代码
+	m_list_remote.ModifyStyle(LVS_TYPEMASK, LVS_SMALLICON);
+}
+
+
+void CFileManagerDlg::OnRemoteView()
+{
+	// TODO: 在此添加命令处理程序代码
+	m_list_remote.ModifyStyle(LVS_TYPEMASK, LVS_ICON);
+}
+
+
+void CFileManagerDlg::OnLocalDelete()
+{
+	// TODO: 在此添加命令处理程序代码
+}
+
+//
+void CFileManagerDlg::OnUpdateLocalDelete(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+}
+
+
+void CFileManagerDlg::OnLocalNewfolder()
+{
+	// TODO: 在此添加命令处理程序代码
+}
+
+
+void CFileManagerDlg::OnUpdateLocalNewfolder(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+}
+
+
+void CFileManagerDlg::OnLocalStop()
+{
+	// TODO: 在此添加命令处理程序代码
+}
+
+
+void CFileManagerDlg::OnUpdateLocalStop(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+}
+
+
+void CFileManagerDlg::OnRemoteDelete()
+{
+	// TODO: 在此添加命令处理程序代码
+}
+
+
+void CFileManagerDlg::OnUpdateRemoteDelete(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+}
+
+
+void CFileManagerDlg::OnRemoteNewfolder()
+{
+	// TODO: 在此添加命令处理程序代码
+}
+
+
+void CFileManagerDlg::OnUpdateRemoteNewfolder(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+}
+
+
+void CFileManagerDlg::OnRemoteStop()
+{
+	// TODO: 在此添加命令处理程序代码
+}
+
+
+void CFileManagerDlg::OnUpdateRemoteStop(CCmdUI *pCmdUI)
 {
 	// TODO: 在此添加命令更新用户界面处理程序代码
 }
