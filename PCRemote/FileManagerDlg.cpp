@@ -103,6 +103,9 @@ BEGIN_MESSAGE_MAP(CFileManagerDlg, CDialogEx)
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONUP()
 	ON_WM_CLOSE()
+	ON_NOTIFY(NM_DBLCLK, IDC_LIST_REMOTE, &CFileManagerDlg::OnDblclkListRemote)
+	ON_COMMAND(IDT_LOCAL_PREV, &CFileManagerDlg::OnLocalPrev)
+	ON_UPDATE_COMMAND_UI(IDT_LOCAL_PREV, &CFileManagerDlg::OnUpdateLocalPrev)
 END_MESSAGE_MAP()
 
 
@@ -809,4 +812,116 @@ void CFileManagerDlg::GetRemoteFileList(CString directory /* = "" */)
 	int nPacketSize = m_Remote_Path.GetLength() + 2;
 	BYTE *bPacket = (BYTE*)LocalAlloc(LPTR, nPacketSize);
 
+	bPacket[0] = COMMAND_LIST_FILES;
+	memcpy(bPacket + 1, m_Remote_Path.GetBuffer(0), nPacketSize - 1);
+	m_iocpServer->Send(m_pContext, bPacket, nPacketSize);
+	LocalFree(bPacket);
+
+	m_Remote_Directory_ComboBox.InsertString(0, m_Remote_Path);
+	m_Remote_Directory_ComboBox.SetCurSel(0);
+
+	//得到返回数据前禁用窗口
+	m_list_remote.EnableWindow(FALSE);
+	m_ProgressCtrl->SetPos(0);
+}
+
+void CFileManagerDlg::OnDblclkListRemote(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	//LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	if(m_list_remote.GetSelectedCount() == 0 || m_list_remote.GetItemData(m_list_remote.GetSelectionMark()) != 1)
+		return ;
+
+	GetRemoteFileList();
+	*pResult = 0;
+}
+
+void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
+{
+	//加载系统ImageList
+	SHFILEINFO sfi;
+	HIMAGELIST hImageListLarge = (HIMAGELIST)SHGetFileInfo(NULL, 0, &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_LARGEICON);
+	HIMAGELIST hImageListSmall = (HIMAGELIST)SHGetFileInfo(NULL, 0, &sfi, sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
+	ListView_SetImageList(m_list_remote.m_hWnd, hImageListLarge, LVSIL_NORMAL);
+	ListView_SetImageList(m_list_remote.m_hWnd, hImageListSmall, LVSIL_SMALL);
+
+	//重建标题
+	m_list_remote.DeleteAllItems();
+	while(m_list_remote.DeleteColumn(0));
+	m_list_remote.InsertColumn(0, "名称",  LVCFMT_LEFT, 200);
+	m_list_remote.InsertColumn(1, "大小", LVCFMT_LEFT, 100);
+	m_list_remote.InsertColumn(2, "类型", LVCFMT_LEFT, 100);
+	m_list_remote.InsertColumn(3, "修改日期", LVCFMT_LEFT, 115);
+
+	int nItemIndex = 0;
+	m_list_remote.SetItemData(
+		m_list_remote.InsertItem(nItemIndex, "..", GetIconIndex(NULL, FILE_ATTRIBUTE_DIRECTORY)),
+		1);
+
+	//避免ListView闪烁，使用SetRedraw
+	m_list_remote>SetRedraw(FALSE);
+
+	if (dwBufferLen != 0)
+	{
+		for (int i = 0; i < 2; i++)
+		{
+			char *pList = (char*)pbBuffer + 1;
+			for (char *pBase = pList; pList - pBase < dwBufferLen -1;)
+			{
+				char    *pszFileName = NULL;
+				DWORD	dwFileSizeHigh = 0;		//文件高字节大小
+				DWORD	dwFileSizeLow  = 0;
+				bool    bIsInsert = false;
+				int		nItem = 0;
+				FILETIME	ftm_strReceiveLocalFileTime;
+
+				int	nType = *pList ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
+				//i为0，列目录。i为1，列文件
+				bIsInsert = !(nType == FILE_ATTRIBUTE_DIRECTORY) == i;
+				pszFileName = ++pList;
+
+				if (bIsInsert)
+				{
+					nItem = m_list_remote.InsertItem(nItemIndex++, pszFileName, GetIconIndex(pszFileName, nType));
+					m_list_remote.SetItemData(nItem, nType == FILE_ATTRIBUTE_DIRECTORY);
+					SHFILEINFO sfi;
+					SHGetFileInfo(pszFileName, FILE_ATTRIBUTE_NORMAL, &sfi, sizeof(SHFILEINFO), SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES);
+					m_list_remote.SetItemText(nItem, 2, sfi.szTypeName);
+				}
+
+				pList += lstrlen(pszFileName) + 1;	//plist向后移动文件名长度个字节
+
+				if (bIsInsert)
+				{
+					if(i)
+					{
+						memcpy(&dwFileSizeHigh, pList , 4);
+						memcpy(&dwFileSizeLow, pList +4, 4);
+						CString strSize;
+						strSize.Format("%10d KB", (dwFileSizeHigh * (MAXDWORD+1)) / 1024 + dwFileSizeLow / 1024 + (dwFileSizeLow % 1024 ? 1 : 0));
+						m_list_remote.SetItemText(nItem, 1, strSize);
+					}
+
+					memcpy(&ftm_strReceiveLocalFileTime, pList + 8, sizeof(FILETIME));
+					CTime time(ftm_strReceiveLocalFileTime);
+					m_list_remote.SetItemText(nItem, 3, time.Format("%Y-%m-%d %H:%M"));
+				}
+				pList += 16;
+			}
+		}
+	}
+
+	m_list_remote.SetRedraw(TRUE);
+	m_list_remote.EnableWindow(TRUE);
+}
+
+void CFileManagerDlg::OnLocalPrev()
+{
+	// TODO: 在此添加命令处理程序代码
+}
+
+
+void CFileManagerDlg::OnUpdateLocalPrev(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
 }
