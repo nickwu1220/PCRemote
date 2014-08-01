@@ -506,6 +506,9 @@ void CFileManagerDlg::OnLocalCopy()
 void CFileManagerDlg::OnUpdateLocalCopy(CCmdUI *pCmdUI)
 {
 	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_list_local.IsWindowEnabled() 
+		&& (m_Remote_Path.GetLength() || m_list_remote.GetSelectedCount())
+		&& m_list_local.GetSelectedCount());
 }
 
 
@@ -939,6 +942,14 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
 	m_list_remote.EnableWindow(TRUE);
 }
 
+void CFileManagerDlg::EnableControl(BOOL bEnable /* = TRUE */)
+{
+	m_list_local.EnableWindow(bEnable);
+	m_list_remote.EnableWindow(bEnable);
+	m_Local_Directory_ComboBox.EnableWindow(bEnable);
+	m_Remote_Directory_ComboBox.EnableWindow(bEnable);
+}
+
 void CFileManagerDlg::OnLocalPrev()
 {
 	// TODO: 在此添加命令处理程序代码
@@ -1040,12 +1051,55 @@ void CFileManagerDlg::OnRemoteView()
 void CFileManagerDlg::OnLocalDelete()
 {
 	// TODO: 在此添加命令处理程序代码
+	m_bIsUpload = true;
+	CString str;
+
+	if (m_list_local.GetSelectedCount() > 1)
+	{
+		str.Format("确定要将这 %d 项删除吗?", m_list_local.GetSelectedCount());
+	} 
+	else
+	{
+		CString file = m_list_local.GetItemText(m_list_local.GetSelectionMark(), 0);
+
+		if(m_list_local.GetItemData(m_list_local.GetSelectionMark()) == 1)
+			str.Format("确定要删除文件夹“%s”并将所有内容删除吗?", file);
+		else
+			str.Format("确定要把“%s”删除吗?", file);
+	}
+
+	if(::MessageBox(m_hWnd, str, "确定删除", MB_YESNO | MB_ICONQUESTION) == IDNO)
+		return ;
+
+	EnableControl(FALSE);
+
+	POSITION pos = m_list_local.GetFirstSelectedItemPosition();
+	while(pos)
+	{
+		int nItem = m_list_local.GetNextSelectedItem(pos);
+		CString file = m_Local_Path + m_list_local.GetItemText(nItem, 0);
+		//如果是目录
+		if (m_list_local.GetItemData(nItem))
+		{
+			file += "\\";
+			DeleteDirectory(file);
+		} 
+		else
+		{
+			DeleteFile(file);
+		}
+	}
+
+	EnableControl(TRUE);
+
+	FixedLocalFileList(".");
 }
 
-//
+//不是根目录，并且选中项目大于0
 void CFileManagerDlg::OnUpdateLocalDelete(CCmdUI *pCmdUI)
 {
 	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_Local_Path.GetLength() && m_list_local.GetSelectionMark() && m_list_local.IsWindowEnabled());
 }
 
 
@@ -1058,6 +1112,7 @@ void CFileManagerDlg::OnLocalNewfolder()
 void CFileManagerDlg::OnUpdateLocalNewfolder(CCmdUI *pCmdUI)
 {
 	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_Local_Path.GetLength() && m_list_local.IsWindowEnabled());
 }
 
 
@@ -1070,6 +1125,7 @@ void CFileManagerDlg::OnLocalStop()
 void CFileManagerDlg::OnUpdateLocalStop(CCmdUI *pCmdUI)
 {
 	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(!m_list_local.IsWindowEnabled() && m_bIsUpload);
 }
 
 
@@ -1082,6 +1138,7 @@ void CFileManagerDlg::OnRemoteDelete()
 void CFileManagerDlg::OnUpdateRemoteDelete(CCmdUI *pCmdUI)
 {
 	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_Remote_Path.GetLength() && m_list_remote.GetSelectionMark() && m_list_remote.IsWindowEnabled());
 }
 
 
@@ -1094,6 +1151,7 @@ void CFileManagerDlg::OnRemoteNewfolder()
 void CFileManagerDlg::OnUpdateRemoteNewfolder(CCmdUI *pCmdUI)
 {
 	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_Remote_Path.GetLength() && m_list_remote.IsWindowEnabled());
 }
 
 
@@ -1106,4 +1164,5 @@ void CFileManagerDlg::OnRemoteStop()
 void CFileManagerDlg::OnUpdateRemoteStop(CCmdUI *pCmdUI)
 {
 	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(!m_list_remote.IsWindowEnabled() && !m_bIsUpload);
 }
