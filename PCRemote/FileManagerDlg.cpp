@@ -1119,6 +1119,7 @@ void CFileManagerDlg::OnUpdateLocalNewfolder(CCmdUI *pCmdUI)
 void CFileManagerDlg::OnLocalStop()
 {
 	// TODO: 在此添加命令处理程序代码
+	m_bIsStop = TRUE;
 }
 
 
@@ -1158,6 +1159,7 @@ void CFileManagerDlg::OnUpdateRemoteNewfolder(CCmdUI *pCmdUI)
 void CFileManagerDlg::OnRemoteStop()
 {
 	// TODO: 在此添加命令处理程序代码
+	m_bIsStop = TRUE;
 }
 
 
@@ -1165,4 +1167,44 @@ void CFileManagerDlg::OnUpdateRemoteStop(CCmdUI *pCmdUI)
 {
 	// TODO: 在此添加命令更新用户界面处理程序代码
 	pCmdUI->Enable(!m_list_remote.IsWindowEnabled() && !m_bIsUpload);
+}
+
+bool CFileManagerDlg::DeleteDirectory(LPCTSTR lpszDirectory)
+{
+	WIN32_FIND_DATA wfd;
+	char lpszFilter[MAX_PATH];
+
+	sprintf(lpszFilter, "%s\\*.*", lpszDirectory);
+
+	HANDLE hfind = FindFirstFile(lpszFilter, &wfd);
+	if(hfind == INVALID_HANDLE_VALUE)
+		return false;
+
+	do 
+	{
+		if (wfd.cFileName[0] != '.')
+		{
+			if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+			{
+				char strDirectory[MAX_PATH];
+				sprintf(strDirectory, "%s\\%s", lpszDirectory, wfd.cFileName);
+				DeleteDirectory(strDirectory);
+			}
+			else
+			{
+				char strfile[MAX_PATH];
+				sprintf(strfile, "%s\\%s", lpszDirectory, wfd.cFileName);
+				DeleteFile(strfile);
+			}
+		}
+	} while (FindNextFile(hfind, &wfd));
+
+	FindClose(hfind);
+
+	if (!RemoveDirectory(lpszDirectory))
+	{
+		return false;
+	}
+
+	return true;
 }
