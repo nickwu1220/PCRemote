@@ -500,6 +500,40 @@ void CFileManagerDlg::OnUpdateRemoteCopy(CCmdUI *pCmdUI)
 void CFileManagerDlg::OnLocalCopy()
 {
 	// TODO: 在此添加命令处理程序代码
+	m_bIsUpload = true;
+
+	//如果是拖拽的文件，复制到客户端去的
+	if(m_nDropIndex != -1 && m_pDropList->GetItemData(m_nDropIndex))
+		m_strCopyDestFolder = m_pDropList->GetItemText(m_nDropIndex, 0);	//获取文件复制到的目的文件夹
+
+	//重置上传任务列表
+	m_Remote_Upload_Job.RemoveAll();
+	POSITION pos = m_list_local.GetFirstSelectedItemPosition();
+	while(pos)
+	{
+		int nItem = m_list_local.GetNextSelectedItem(pos);
+		CString file = m_Local_Path + m_list_local.GetItemText(nItem, 0);
+
+		//如果是目录
+		if (m_list_local.GetItemData(nItem))
+		{
+			file += "\\";
+			FixedUploadDirectory(file.GetBuffer(0));
+		} 
+		else
+		{
+			m_Remote_Upload_Job.AddTail(file);
+		}
+	}
+
+	if (m_Remote_Upload_Job.IsEmpty())
+	{
+		::MessageBox(m_hWnd, "文件夹为空", "警告", MB_OK|MB_ICONWARNING);
+		return ;
+	}
+
+	EnableControl(FALSE);
+	SendUploadJob();
 }
 
 
@@ -1207,4 +1241,13 @@ bool CFileManagerDlg::DeleteDirectory(LPCTSTR lpszDirectory)
 	}
 
 	return true;
+}
+
+BOOL CFileManagerDlg::SendUploadJob()
+{
+	if(m_Remote_Upload_Job.IsEmpty())
+		return FALSE;
+
+	CString strDestDirectory = m_Remote_Path;
+
 }
