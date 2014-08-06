@@ -19,7 +19,7 @@ static UINT indicators[] =
 
 IMPLEMENT_DYNAMIC(CFileManagerDlg, CDialogEx)
 
-CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, ClientContext *pContext)
+	CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, ClientContext *pContext)
 	: CDialogEx(CFileManagerDlg::IDD, pParent)
 {
 	SHFILEINFO sfi;
@@ -67,8 +67,8 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, Client
 
 	memset(m_bRemoteDriveList, 0, sizeof(m_bRemoteDriveList));
 	memcpy(m_bRemoteDriveList, 
-		   m_pContext->m_DeCompressionBuffer.GetBuffer(1), 
-		   m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1);
+		m_pContext->m_DeCompressionBuffer.GetBuffer(1), 
+		m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1);
 
 	m_nTransferMode = TRANSFER_MODE_NORMAL;
 	m_nOperatingFileLength = 0;
@@ -175,7 +175,7 @@ BOOL CFileManagerDlg::OnInitDialog()
 	m_wndToolBar_Local.ModifyStyle(0, TBSTYLE_FLAT);
 	m_wndToolBar_Local.LoadTrueColorToolBar(
 		24,
-		IDB_TOOLBAR_DISABLE,
+		IDB_TOOLBAR_ENABLE,
 		IDB_TOOLBAR_ENABLE,
 		IDB_TOOLBAR_DISABLE);
 	// 添加下拉按钮
@@ -412,7 +412,7 @@ void CFileManagerDlg::FixedLocalFileList(CString directory /* = "" */)
 			bContinue = finder.FindNextFile();
 			if(finder.IsDots())
 				continue;
-			
+
 			BOOL bIsInsert = (!finder.IsDirectory() == i);
 
 			if(!bIsInsert)
@@ -801,22 +801,22 @@ void CFileManagerDlg::OnRecviveComplete()
 	{
 	case TOKEN_FILE_LIST:	//文件列表
 		FixedRemoteFileList(m_pContext->m_DeCompressionBuffer.GetBuffer(0),
-							m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1);
+			m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1);
 		break;
 	case TOKEN_FILE_SIZE:	// 传输文件时的第一个数据包，文件大小，及文件名
-		CreateLocalRecvFile();
+		//CreateLocalRecvFile();
 		break;
 	case TOKEN_FILE_DATA:	//文件内容
-		WriteLocalRecvFile();
+		//WriteLocalRecvFile();
 		break;
 	case TOKEN_TRANSFER_FINISH:		//传输完成
-		EndLocalRecvFile();
+		//	EndLocalRecvFile();
 		break;
 	case TOKEN_CREATEFOLDER_FINISH:
 		GetRemoteFileList(".");
 		break;
 	case TOKEN_DELETE_FINISH:
-		EndRemoteDeleteFile();
+		//EndRemoteDeleteFile();
 		break;
 	case TOKEN_GET_TRANSFER_MODE:
 		SendTransferMode();
@@ -1337,4 +1337,216 @@ BOOL CFileManagerDlg::SendUploadJob()
 	//从任务列表里删除
 	m_Remote_Upload_Job.RemoveHead();
 	return TRUE;
+}
+
+void CFileManagerDlg::ShowMessage(char *lpFmt, ...)
+{
+	/*char buff[1024];
+	va_list    arglist;
+	va_start( arglist, lpFmt );
+
+	memset(buff, 0, sizeof(buff));
+
+	vsprintf(buff, lpFmt, arglist);
+	m_wndStatusBar.SetPaneText(0, buff);
+	va_end( arglist );*/
+}
+
+void CFileManagerDlg::ShowProgress()
+{
+	char	*lpDirection = NULL;
+	if (m_bIsUpload)
+		lpDirection = "传送文件";
+	else
+		lpDirection = "接收文件";
+
+
+	if ((int)m_nCounter == -1)
+	{
+		m_nCounter = m_nOperatingFileLength;
+	}
+
+	int	progress = (float)(m_nCounter * 100) / m_nOperatingFileLength;
+	ShowMessage("%s %s %dKB (%d%%)", lpDirection, m_strOperatingFile, (int)(m_nCounter / 1024), progress);
+	m_ProgressCtrl->SetPos(progress);
+
+	if (m_nCounter == m_nOperatingFileLength)
+	{
+		m_nCounter = m_nOperatingFileLength = 0;
+		// 关闭文件句柄
+	}
+}
+
+void CFileManagerDlg::SendFileData()
+{
+	FILESIZE *pFileSize = (FILESIZE*)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+	LONG dwOffsetHigh = pFileSize->dwSizeHigh;
+	LONG dwOffsetLow  = pFileSize->dwSizeLow;
+
+	m_nCounter = MAKEINT64(pFileSize->dwSizeLow, pFileSize->dwSizeHigh);
+
+	ShowProgress();
+
+	if (m_nCounter == m_nOperatingFileLength || pFileSize->dwSizeLow == -1 || m_bIsStop)
+	{
+		EndLocalUploadFile();
+		return ;
+	}
+
+	HANDLE hFile;
+	hFile = CreateFile(m_strOperatingFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	if(hFile == INVALID_HANDLE_VALUE)
+		return ;
+
+	SetFilePointer(hFile, dwOffsetLow, &dwOffsetHigh, FILE_BEGIN);
+
+	int nHeadLength = 9;	//1 + 4 + 4 数据包头大小
+
+	DWORD nNumberOfBytesToRead = MAX_SEND_BUFFER - nHeadLength;
+	DWORD nNumberOfBytesRead = 0;
+	BYTE *lpBuffer = (BYTE*)LocalAlloc(LPTR, MAX_SEND_BUFFER);
+
+	lpBuffer[0] = COMMAND_FILE_DATA;
+	memcpy(lpBuffer + 1, &dwOffsetHigh, sizeof(dwOffsetHigh));
+	memcpy(lpBuffer + 5, &dwOffsetLow, sizeof(dwOffsetLow));
+
+	ReadFile(hFile, lpBuffer + nHeadLength, nNumberOfBytesToRead, &nNumberOfBytesRead, NULL);
+	CloseHandle(hFile);
+
+	if (nNumberOfBytesRead > 0)
+	{
+		int nPacketSize = nNumberOfBytesRead + nHeadLength;
+		m_iocpServer->Send(m_pContext, lpBuffer, nPacketSize);
+	}
+
+	LocalFree(lpBuffer);
+}
+
+void CFileManagerDlg::EndLocalUploadFile()
+{
+	m_nCounter = 0;
+	m_strOperatingFile = "";
+	m_nOperatingFileLength = 0;
+
+	if (m_Remote_Upload_Job.IsEmpty() || m_bIsStop)
+	{
+		m_Remote_Upload_Job.RemoveAll();
+		m_bIsStop = FALSE;
+		EnableControl(TRUE);
+		GetRemoteFileList(".");
+	} 
+	else
+	{
+		Sleep(5);
+		SendUploadJob();
+	}
+}
+
+void CFileManagerDlg::SendException()
+{
+	BYTE	bBuff = COMMAND_EXCEPTION;
+	m_iocpServer->Send(m_pContext, &bBuff, 1);
+}
+
+void CFileManagerDlg::SendTransferMode()
+{
+	CFileTransferModeDlg dlg(this);
+	dlg.m_strFileName = m_strUploadRemoteFile;
+
+	switch(dlg.DoModal())
+	{
+	case IDC_OVERWRITE:
+		m_nTransferMode = TRANSFER_MODE_OVERWRITE;
+		break;
+	case IDC_OVERWRITE_ALL:
+		m_nTransferMode = TRANSFER_MODE_OVERWRITE_ALL;
+		break;
+	case IDC_ADDITION:
+		m_nTransferMode = TRANSFER_MODE_ADDITION;
+		break;
+	case IDC_ADDITION_ALL:
+		m_nTransferMode = TRANSFER_MODE_ADDITION_ALL;
+		break;
+	case IDC_JUMP:
+		m_nTransferMode = TRANSFER_MODE_JUMP;
+		break;
+	case IDC_JUMP_ALL:
+		m_nTransferMode = TRANSFER_MODE_JUMP_ALL;
+		break;
+	case IDC_CANCEL:
+		m_nTransferMode = TRANSFER_MODE_CANCEL;
+		break;
+	}
+
+	if (m_nTransferMode == TRANSFER_MODE_CANCEL)
+	{
+		m_bIsStop = TRUE;
+		EndLocalUploadFile();
+		return ;
+	}
+
+	BYTE bToken[5];
+	bToken[0] = COMMAND_SET_TRANSFER_MODE;
+	memcpy(bToken + 1, &m_nTransferMode, sizeof(m_nTransferMode));
+	m_iocpServer->Send(m_pContext, (unsigned char*)&bToken, sizeof(bToken));
+}
+
+BOOL CFileManagerDlg::PreTranslateMessage(MSG* pMsg)
+{
+	// TODO: 在此添加专用代码和/或调用基类
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		if (pMsg->wParam == VK_ESCAPE)
+				return true;
+		if (pMsg->wParam == VK_RETURN)
+		{
+			if (
+				pMsg->hwnd == m_list_local.m_hWnd || 
+				pMsg->hwnd == ((CEdit*)m_Local_Directory_ComboBox.GetWindow(GW_CHILD))->m_hWnd
+				)
+			{
+				FixedLocalFileList();
+			}
+			else if 
+				(
+				pMsg->hwnd == m_list_remote.m_hWnd ||
+				pMsg->hwnd == ((CEdit*)m_Remote_Directory_ComboBox.GetWindow(GW_CHILD))->m_hWnd
+				)
+			{
+				GetRemoteFileList();
+			}
+			return TRUE;
+		}
+		
+	}
+	// 单击除了窗口标题栏以外的区域使窗口移动
+	if (pMsg->message == WM_LBUTTONDOWN && pMsg->hwnd == m_hWnd)
+	{
+		pMsg->message = WM_NCLBUTTONDOWN;
+		pMsg->wParam = HTCAPTION;
+	}
+	/*
+	UINT CFileManagerDlg::OnNcHitTest (Cpoint point )
+	{
+		UINT nHitTest =Cdialog: : OnNcHitTest (point )
+			return (nHitTest = =HTCLIENT)? HTCAPTION : nHitTest
+	}
+	
+	上述技术有两点不利之处，
+		其一是在窗口的客户区域双击时，窗口将极大；
+		其二， 它不适合包含几个视窗的主框窗口。
+	*/
+
+
+	if(m_wndToolBar_Local.IsWindowVisible())
+	{
+		CWnd* pWndParent = m_wndToolBar_Local.GetParent();
+		m_wndToolBar_Local.OnUpdateCmdUI((CFrameWnd*)this, TRUE);
+	}
+	if(m_wndToolBar_Remote.IsWindowVisible())
+	{
+		CWnd* pWndParent = m_wndToolBar_Remote.GetParent();
+		m_wndToolBar_Remote.OnUpdateCmdUI((CFrameWnd*)this, TRUE);
+	}
+	return CDialogEx::PreTranslateMessage(pMsg);
 }

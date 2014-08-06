@@ -35,13 +35,13 @@ public:
 	CString m_strCopyDestFolder;
 	void SendContinue();
 	void SendException();
-	void EndLocalRecvFile();
-	void EndRemoteDeleteFile();
+	//void EndLocalRecvFile();
+	//void EndRemoteDeleteFile();
 	CString m_strOperatingFile;
 	__int64 m_nOperatingFileLength;	//文件size
 	__int64 m_nCounter;				//计数器
-	void WriteLocalRecvFile();
-	void CreateLocalRecvFile();
+	//void WriteLocalRecvFile();
+	//void CreateLocalRecvFile();
 	BOOL SendDownloadJob();
 	BOOL SendUploadJob();
 	BOOL SendDeleteJob();
@@ -51,6 +51,7 @@ public:
 	strList m_Remote_Delete_Job;
 	CTrueColorToolBar m_wndToolBar_Local;
 	CTrueColorToolBar m_wndToolBar_Remote;
+	void ShowMessage(char *lpFmt, ...);
 	CString m_Remote_Path;
 	BYTE m_bRemoteDriveList[1024];
 	CString GetParentDirectory(CString strPath);
@@ -143,4 +144,5 @@ public:
 	afx_msg void OnUpdateRemoteNewfolder(CCmdUI *pCmdUI);
 	afx_msg void OnRemoteStop();
 	afx_msg void OnUpdateRemoteStop(CCmdUI *pCmdUI);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 };

@@ -100,6 +100,14 @@ typedef struct
 	int  nWidth;
 }COLUMNSTRUCT;
 
+typedef struct 
+{
+	DWORD	dwSizeHigh;
+	DWORD	dwSizeLow;
+}FILESIZE;
+
+#define MAKEINT64(low, high) ((unsigned __int64)(((DWORD)(low)) | ((unsigned __int64)((DWORD)(high))) << 32))
+
 #ifdef _UNICODE
 #if defined _M_IX86
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
