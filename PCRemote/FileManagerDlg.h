@@ -55,10 +55,13 @@ public:
 	CString m_Remote_Path;
 	BYTE m_bRemoteDriveList[1024];
 	CString GetParentDirectory(CString strPath);
-	void OnRecviveComplete();
+	void OnReceiveComplete();
 
 	CImageList *m_pImageList_Large;
 	CImageList *m_pImageList_Small;
+
+	CImageList	m_ImageListSmallForRemoteDriver;
+	CImageList	m_ImageListLargeForRemoteDriver;
 
 	ClientContext *m_pContext;
 	CIOCPServer *m_iocpServer;
@@ -145,4 +148,5 @@ public:
 	afx_msg void OnRemoteStop();
 	afx_msg void OnUpdateRemoteStop(CCmdUI *pCmdUI);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	void ExtractShellIconForDriver();
 };

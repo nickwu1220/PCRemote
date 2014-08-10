@@ -179,9 +179,7 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 	{
 		switch (pContext->m_Dialog[0])
 		{
-		/*case FILEMANAGER_DLG:
-			((CFileManagerDlg *)dlg)->OnReceiveComplete();
-			break;
+		/*
 		case WEBCAM_DLG:
 			((CWebCamDlg *)dlg)->OnReceiveComplete();
 			break;
@@ -191,6 +189,9 @@ void CPCRemoteDlg::ProcessReceiveComplete(ClientContext *pContext)
 		case KEYBOARD_DLG:
 			((CKeyBoardDlg *)dlg)->OnReceiveComplete();
 			break;*/
+		case FILEMANAGER_DLG:
+			((CFileManagerDlg *)dlg)->OnReceiveComplete();
+			break;
 		case SCREENSPY_DLG:
 			((CScreenSpyDlg *)dlg)->OnReceiveComplete();
 			break;

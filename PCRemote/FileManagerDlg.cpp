@@ -211,6 +211,10 @@ BOOL CFileManagerDlg::OnInitDialog()
 	m_list_local.SetImageList(m_pImageList_Large, LVSIL_NORMAL);
 	m_list_local.SetImageList(m_pImageList_Small, LVSIL_SMALL);
 
+	//创建远端driver图标列表
+	m_ImageListLargeForRemoteDriver.Create(32, 32, ILC_COLOR32, 5, 1);
+	m_ImageListSmallForRemoteDriver.Create(16, 16, ILC_COLOR32, 5, 1);
+
 	//创建带进度条的状态栏
 	if (!m_wndStatusBar.Create(this) || 
 		!m_wndStatusBar.SetIndicators(indicators, sizeof(indicators)/sizeof(UINT)))
@@ -233,7 +237,7 @@ BOOL CFileManagerDlg::OnInitDialog()
 	//初始化本地驱动器列表并将显示本地驱动器列表
 	FixedLocalDriveList();
 	//初始化客户端驱动器列表并将显示客户端驱动器列表
-	//FixedRmoteDriveList();
+	FixedRmoteDriveList();
 
 	m_bDragging = FALSE;
 	m_nDragIndex = -1;
@@ -690,7 +694,7 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
 
 		if (pDropWnd->IsKindOf(RUNTIME_CLASS(CListCtrl)))
 		{
-			m_pDragList = (CListCtrl *)pDropWnd;
+			m_pDropList = (CListCtrl *)pDropWnd;
 			DropItemOnList(m_pDragList, m_pDropList);
 		}
 	}
@@ -699,11 +703,14 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
 
 void CFileManagerDlg::FixedRmoteDriveList()
 {
-	HIMAGELIST hImageListLarge = NULL;
-	HIMAGELIST hImageListSmall = NULL;
-	BOOL ret = Shell_GetImageLists(&hImageListLarge, &hImageListSmall);
-	ListView_SetImageList(m_list_remote.m_hWnd, hImageListLarge, LVSIL_NORMAL);
-	ListView_SetImageList(m_list_remote.m_hWnd, hImageListSmall, LVSIL_SMALL);
+// 	HIMAGELIST hImageListLarge = NULL;
+// 	HIMAGELIST hImageListSmall = NULL;
+// 	BOOL ret = Shell_GetImageLists(&hImageListLarge, &hImageListSmall);
+	//ListView_SetImageList(m_list_remote.m_hWnd, hImageListLarge, LVSIL_NORMAL);
+	//ListView_SetImageList(m_list_remote.m_hWnd, hImageListSmall, LVSIL_SMALL);
+
+	//从shell32.dll提取driver图标，for m_list_remote
+	ExtractShellIconForDriver();
 
 	m_list_remote.DeleteAllItems();
 	while(m_list_remote.DeleteColumn(0));
@@ -726,26 +733,26 @@ void CFileManagerDlg::FixedRmoteDriveList()
 	{
 		if (pDrive[i] == 'A' || pDrive[i] == 'B')
 		{
-			nIconIndex = 6;
+			nIconIndex = 0;
 		}
 		else
 		{
 			switch(pDrive[i + 1])
 			{
 			case DRIVE_REMOVABLE:
-				nIconIndex = 7;
+				nIconIndex = 1;
 				break;
 			case DRIVE_FIXED:
-				nIconIndex = 8;
+				nIconIndex = 2;
 				break;
 			case DRIVE_REMOTE:
-				nIconIndex = 9;
+				nIconIndex = 3;
 				break;
 			case DRIVE_CDROM:
-				nIconIndex = 11;
+				nIconIndex = 4;
 				break;
 			default:
-				nIconIndex = 8;
+				nIconIndex = 2;
 				break;	
 			}
 		}
@@ -795,7 +802,7 @@ void CFileManagerDlg::OnClose()
 	CDialogEx::OnClose();
 }
 
-void CFileManagerDlg::OnRecviveComplete()
+void CFileManagerDlg::OnReceiveComplete()
 {
 	switch(m_pContext->m_DeCompressionBuffer.GetBuffer(0)[0])
 	{
@@ -1306,7 +1313,7 @@ BOOL CFileManagerDlg::SendUploadJob()
 
 	DWORD dwSizeHigh;
 	DWORD dwSizeLow;
-	//// 1 字节token, 8字节大小, 文件名称, '\0'
+	//// 1 字节token + 8字节大小 + 文件名称 + '\0'
 	HANDLE hFile;
 	CString fileRemote = m_strOperatingFile;	//远程文件
 	//得到要保存到远程的文件路径
@@ -1549,4 +1556,38 @@ BOOL CFileManagerDlg::PreTranslateMessage(MSG* pMsg)
 		m_wndToolBar_Remote.OnUpdateCmdUI((CFrameWnd*)this, TRUE);
 	}
 	return CDialogEx::PreTranslateMessage(pMsg);
+}
+
+
+void CFileManagerDlg::ExtractShellIconForDriver()
+{
+	//图像列表为空，说明是第一次显示远端磁盘列表。从shell32.dll提取加入图像列表。
+	if(!(m_ImageListLargeForRemoteDriver.GetImageCount()) && !(m_ImageListSmallForRemoteDriver.GetImageCount()))
+	{
+		//磁盘图标在shell32.dll里位置，6 = floppy，7 = Removable drive， 8 = Hard disk drive， 9 = Network drive， 11 = CD drive
+		int ShellIconArray[] = {6, 7, 8, 9, 11}; 
+		
+		m_list_remote.SetImageList(&m_ImageListSmallForRemoteDriver, LVSIL_SMALL);
+		m_list_remote.SetImageList(&m_ImageListLargeForRemoteDriver, LVSIL_NORMAL);
+
+		HICON hIcon = NULL;
+		for (int i = 0; i < sizeof(ShellIconArray) / sizeof(int); i++)
+		{
+			//bLargeIcons为0，取图标。bLargeIcons为1，取大图标
+			for (int bLargeIcons = 0; bLargeIcons < 2; bLargeIcons++)
+			{
+				ExtractIconEx(_T("SHELL32.DLL"), ShellIconArray[i], bLargeIcons ? &hIcon : NULL, bLargeIcons ? NULL : &hIcon, 1);
+				if (bLargeIcons)
+					m_ImageListLargeForRemoteDriver.Add(hIcon);
+				else
+					m_ImageListSmallForRemoteDriver.Add(hIcon);
+				DestroyIcon(hIcon);
+			}	
+		}
+	}
+	else
+	{
+		m_list_remote.SetImageList(&m_ImageListSmallForRemoteDriver, LVSIL_SMALL);
+		m_list_remote.SetImageList(&m_ImageListLargeForRemoteDriver, LVSIL_NORMAL);
+	}
 }
