@@ -6,6 +6,7 @@
 #include "FileManagerDlg.h"
 #include "afxdialogex.h"
 #include "FileTransferModeDlg.h"
+#include "InputDialog.h"
 #include "..\common\macros.h"
 
 // CFileManagerDlg 对话框
@@ -703,9 +704,9 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
 
 void CFileManagerDlg::FixedRmoteDriveList()
 {
-// 	HIMAGELIST hImageListLarge = NULL;
-// 	HIMAGELIST hImageListSmall = NULL;
-// 	BOOL ret = Shell_GetImageLists(&hImageListLarge, &hImageListSmall);
+	// 	HIMAGELIST hImageListLarge = NULL;
+	// 	HIMAGELIST hImageListSmall = NULL;
+	// 	BOOL ret = Shell_GetImageLists(&hImageListLarge, &hImageListSmall);
 	//ListView_SetImageList(m_list_remote.m_hWnd, hImageListLarge, LVSIL_NORMAL);
 	//ListView_SetImageList(m_list_remote.m_hWnd, hImageListSmall, LVSIL_SMALL);
 
@@ -1147,6 +1148,15 @@ void CFileManagerDlg::OnUpdateLocalDelete(CCmdUI *pCmdUI)
 void CFileManagerDlg::OnLocalNewfolder()
 {
 	// TODO: 在此添加命令处理程序代码
+	if(m_Local_Path == "")
+		return ;
+
+	CInputDialog dlg;
+	if (dlg.DoModal() == IDOK && dlg.m_strDirectory.GetLength())
+	{
+		MakeSureDirectoryPathExists(m_Local_Path + dlg.m_strDirectory + "\\");
+		FixedLocalFileList(".");	//刷新文件列表
+	}
 }
 
 
@@ -1504,7 +1514,7 @@ BOOL CFileManagerDlg::PreTranslateMessage(MSG* pMsg)
 	if (pMsg->message == WM_KEYDOWN)
 	{
 		if (pMsg->wParam == VK_ESCAPE)
-				return true;
+			return true;
 		if (pMsg->wParam == VK_RETURN)
 		{
 			if (
@@ -1524,7 +1534,7 @@ BOOL CFileManagerDlg::PreTranslateMessage(MSG* pMsg)
 			}
 			return TRUE;
 		}
-		
+
 	}
 	// 单击除了窗口标题栏以外的区域使窗口移动
 	if (pMsg->message == WM_LBUTTONDOWN && pMsg->hwnd == m_hWnd)
@@ -1535,13 +1545,13 @@ BOOL CFileManagerDlg::PreTranslateMessage(MSG* pMsg)
 	/*
 	UINT CFileManagerDlg::OnNcHitTest (Cpoint point )
 	{
-		UINT nHitTest =Cdialog: : OnNcHitTest (point )
-			return (nHitTest = =HTCLIENT)? HTCAPTION : nHitTest
+	UINT nHitTest =Cdialog: : OnNcHitTest (point )
+	return (nHitTest = =HTCLIENT)? HTCAPTION : nHitTest
 	}
-	
+
 	上述技术有两点不利之处，
-		其一是在窗口的客户区域双击时，窗口将极大；
-		其二， 它不适合包含几个视窗的主框窗口。
+	其一是在窗口的客户区域双击时，窗口将极大；
+	其二， 它不适合包含几个视窗的主框窗口。
 	*/
 
 
@@ -1566,7 +1576,7 @@ void CFileManagerDlg::ExtractShellIconForDriver()
 	{
 		//磁盘图标在shell32.dll里位置，6 = floppy，7 = Removable drive， 8 = Hard disk drive， 9 = Network drive， 11 = CD drive
 		int ShellIconArray[] = {6, 7, 8, 9, 11}; 
-		
+
 		m_list_remote.SetImageList(&m_ImageListSmallForRemoteDriver, LVSIL_SMALL);
 		m_list_remote.SetImageList(&m_ImageListLargeForRemoteDriver, LVSIL_NORMAL);
 
@@ -1590,4 +1600,119 @@ void CFileManagerDlg::ExtractShellIconForDriver()
 		m_list_remote.SetImageList(&m_ImageListSmallForRemoteDriver, LVSIL_SMALL);
 		m_list_remote.SetImageList(&m_ImageListLargeForRemoteDriver, LVSIL_NORMAL);
 	}
+}
+
+//新建目录，新建文件夹时，如果父目录不存在，先新建父目录，再建子目录
+bool CFileManagerDlg::MakeSureDirectoryPathExists(LPCTSTR pszDirPath)
+{
+	LPTSTR p, pszDirCopy;
+	DWORD dwAttributes;
+
+	// Make a copy of the string for editing.
+
+	__try
+	{
+		pszDirCopy = (LPTSTR)malloc(sizeof(TCHAR) * (lstrlen(pszDirPath) + 1));
+
+		if(pszDirCopy == NULL)
+			return FALSE;
+
+		lstrcpy(pszDirCopy, pszDirPath);
+
+		p = pszDirCopy;
+
+		//  If the second character in the path is "\", then this is a UNC
+		//  path, and we should skip forward until we reach the 2nd \ in the path.
+
+		if((*p == TEXT('\\')) && (*(p+1) == TEXT('\\')))
+		{
+			p++;            // Skip over the first \ in the name.
+			p++;            // Skip over the second \ in the name.
+
+			//  Skip until we hit the first "\" (\\Server\).
+
+			while(*p && *p != TEXT('\\'))
+			{
+				p = CharNext(p);
+			}
+
+			// Advance over it.
+
+			if(*p)
+			{
+				p++;
+			}
+
+			//  Skip until we hit the second "\" (\\Server\Share\).
+
+			while(*p && *p != TEXT('\\'))
+			{
+				p = CharNext(p);
+			}
+
+			// Advance over it also.
+
+			if(*p)
+			{
+				p++;
+			}
+
+		}
+		else if(*(p+1) == TEXT(':')) // Not a UNC.  See if it's <drive>:
+		{
+			p++;
+			p++;
+
+			// If it exists, skip over the root specifier
+
+			if(*p && (*p == TEXT('\\')))
+			{
+				p++;
+			}
+		}
+
+		while(*p)
+		{
+			if(*p == TEXT('\\'))
+			{
+				*p = TEXT('\0');
+				dwAttributes = GetFileAttributes(pszDirCopy);
+
+				// Nothing exists with this name.  Try to make the directory name and error if unable to.
+				if(dwAttributes == 0xffffffff)
+				{
+					if(!CreateDirectory(pszDirCopy, NULL))
+					{
+						if(GetLastError() != ERROR_ALREADY_EXISTS)
+						{
+							free(pszDirCopy);
+							return FALSE;
+						}
+					}
+				}
+				else
+				{
+					if((dwAttributes & FILE_ATTRIBUTE_DIRECTORY) != FILE_ATTRIBUTE_DIRECTORY)
+					{
+						// Something exists with this name, but it's not a directory... Error
+						free(pszDirCopy);
+						return FALSE;
+					}
+				}
+
+				*p = TEXT('\\');
+			}
+
+			p = CharNext(p);
+		}
+	}
+	__except(EXCEPTION_EXECUTE_HANDLER)
+	{
+		// SetLastError(GetExceptionCode());
+		free(pszDirCopy);
+		return FALSE;
+	}
+
+	free(pszDirCopy);
+	return TRUE;
 }

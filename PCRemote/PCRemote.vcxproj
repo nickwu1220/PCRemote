@@ -100,13 +100,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
+    <None Include="res\1.cur" />
+    <None Include="res\2.cur" />
+    <None Include="res\3.cur" />
+    <None Include="res\4.cur" />
     <None Include="res\bitmap1.bmp" />
+    <None Include="res\Bitmap_4.bmp" />
+    <None Include="res\Bitmap_5.bmp" />
+    <None Include="res\bmp00001.bmp" />
     <None Include="res\cmdshell.ico" />
     <None Include="res\dot.cur" />
     <None Include="res\PCRemote.ico" />
     <None Include="res\PCRemote.rc2" />
     <None Include="res\system.ico" />
     <None Include="res\toolbar1.bmp" />
+    <None Include="res\toolbar2.bmp" />
     <None Include="res\ToolBar_Main.bmp" />
   </ItemGroup>
   <ItemGroup>
@@ -117,6 +125,7 @@
     <ClInclude Include="include\IOCPServer.h" />
     <ClInclude Include="include\Mapper.h" />
     <ClInclude Include="IniFile.h" />
+    <ClInclude Include="InputDialog.h" />
     <ClInclude Include="PCRemote.h" />
     <ClInclude Include="PCRemoteDlg.h" />
     <ClInclude Include="Resource.h" />
@@ -136,6 +145,7 @@
     <ClCompile Include="include\CpuUsage.cpp" />
     <ClCompile Include="include\IOCPServer.cpp" />
     <ClCompile Include="IniFile.cpp" />
+    <ClCompile Include="InputDialog.cpp" />
     <ClCompile Include="PCRemote.cpp" />
     <ClCompile Include="PCRemoteDlg.cpp" />
     <ClCompile Include="ScreenSpyDlg.cpp" />
