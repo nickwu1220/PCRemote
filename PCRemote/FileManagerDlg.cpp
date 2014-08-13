@@ -493,6 +493,7 @@ void CFileManagerDlg::DropItemOnList(CListCtrl* pDragList, CListCtrl* pDropList)
 void CFileManagerDlg::OnRemoteCopy()
 {
 	// TODO: 在此添加命令处理程序代码
+
 }
 
 
@@ -812,19 +813,19 @@ void CFileManagerDlg::OnReceiveComplete()
 			m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1);
 		break;
 	case TOKEN_FILE_SIZE:	// 传输文件时的第一个数据包，文件大小，及文件名
-		//CreateLocalRecvFile();
+		CreateLocalRecvFile();
 		break;
 	case TOKEN_FILE_DATA:	//文件内容
-		//WriteLocalRecvFile();
+		WriteLocalRecvFile();
 		break;
 	case TOKEN_TRANSFER_FINISH:		//传输完成
-		//	EndLocalRecvFile();
+		EndLocalRecvFile();
 		break;
 	case TOKEN_CREATEFOLDER_FINISH:
 		GetRemoteFileList(".");
 		break;
 	case TOKEN_DELETE_FINISH:
-		//EndRemoteDeleteFile();
+		EndRemoteDeleteFile();
 		break;
 	case TOKEN_GET_TRANSFER_MODE:
 		SendTransferMode();
@@ -1184,6 +1185,43 @@ void CFileManagerDlg::OnUpdateLocalStop(CCmdUI *pCmdUI)
 void CFileManagerDlg::OnRemoteDelete()
 {
 	// TODO: 在此添加命令处理程序代码
+	m_bIsUpload = false;
+	CString str;
+
+	if (m_list_remote.GetSelectedCount() > 1)
+	{
+		str.Format("确定要将这 %d 项删除吗?", m_list_remote.GetSelectedCount());
+	}
+	else
+	{
+		CString file = m_list_remote.GetItemText(m_list_remote.GetSelectionMark(), 0);
+
+		if(m_list_remote.GetItemData(m_list_remote.GetSelectionMark()) == 1)
+			str.Format("确定要删除文件夹 “%s” 并将所有内容删除吗?", file);
+		else
+			str.Format("确定要把“%s”删除吗?", file);
+	}
+
+	if(::MessageBox(m_hWnd, str, "确认删除", MB_YESNO|MB_ICONQUESTION) == IDNO)
+		return ;
+
+	m_Remote_Delete_Job.RemoveAll();
+
+	POSITION pos = m_list_remote.GetFirstSelectedItemPosition();
+	while(pos)
+	{
+		int nItem = m_list_remote.GetNextSelectedItem(pos);
+		CString file = m_Remote_Path + m_list_remote.GetItemText(nItem, 0);
+
+		if(m_list_remote.GetItemData(nItem))
+			file += "\\";
+
+		m_Remote_Delete_Job.AddHead(file);
+	}
+
+	EnableControl(FALSE);
+	//发送第一个删除任务
+	SendDeleteJob();
 }
 
 
@@ -1197,6 +1235,21 @@ void CFileManagerDlg::OnUpdateRemoteDelete(CCmdUI *pCmdUI)
 void CFileManagerDlg::OnRemoteNewfolder()
 {
 	// TODO: 在此添加命令处理程序代码
+	if(m_Remote_Path == "")
+		return ;
+
+	CInputDialog dlg;
+	if (dlg.DoModal() == IDOK && dlg.m_strDirectory.GetLength())
+	{
+		CString file = m_Remote_Path + dlg.m_strDirectory + "\\";
+		UINT nPacketSize = file.GetLength() + 2;
+
+		LPBYTE lpBuffer = (LPBYTE)LocalAlloc(LPTR, nPacketSize);
+		lpBuffer[0] = COMMAND_CREATE_FOLDER;
+		memcpy(lpBuffer + 1, file.GetBuffer(0), nPacketSize - 1);
+		m_iocpServer->Send(m_pContext, lpBuffer, nPacketSize);
+		LocalFree(lpBuffer);
+	}
 }
 
 
@@ -1356,6 +1409,32 @@ BOOL CFileManagerDlg::SendUploadJob()
 	return TRUE;
 }
 
+BOOL CFileManagerDlg::SendDeleteJob()
+{
+	if(m_Remote_Delete_Job.IsEmpty())
+		return FALSE;
+
+	CString file = m_Remote_Delete_Job.GetHead();
+	int nPacketSize = file.GetLength() + 2;
+	BYTE *bPacket = (BYTE*)LocalAlloc(LPTR, nPacketSize);
+
+	if (file.Right(1) == '\\')
+	{
+		bPacket[0] = COMMAND_DELETE_DIRECTORY;
+	} 
+	else
+	{
+		bPacket[0] = COMMAND_DELETE_FILE;
+	}
+
+	memcpy(bPacket + 1, file.GetBuffer(0), nPacketSize - 1);
+	m_iocpServer->Send(m_pContext, bPacket, nPacketSize);
+
+	LocalFree(bPacket);
+	m_Remote_Delete_Job.RemoveHead();
+	return TRUE;
+}
+
 void CFileManagerDlg::ShowMessage(char *lpFmt, ...)
 {
 	/*char buff[1024];
@@ -1456,6 +1535,21 @@ void CFileManagerDlg::EndLocalUploadFile()
 	{
 		Sleep(5);
 		SendUploadJob();
+	}
+}
+
+void CFileManagerDlg::EndRemoteDeleteFile()
+{
+	if (m_Remote_Delete_Job.IsEmpty() || m_bIsStop)
+	{
+		m_bIsStop = FALSE;
+		EnableControl(TRUE);
+		GetRemoteFileList(".");
+	} 
+	else
+	{
+		Sleep(5);
+		SendDeleteJob();
 	}
 }
 

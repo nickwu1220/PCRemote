@@ -35,13 +35,13 @@ public:
 	CString m_strCopyDestFolder;
 	void SendContinue();
 	void SendException();
-	//void EndLocalRecvFile();
-	//void EndRemoteDeleteFile();
+	void EndLocalRecvFile();
+	void EndRemoteDeleteFile();
 	CString m_strOperatingFile;
 	__int64 m_nOperatingFileLength;	//文件size
 	__int64 m_nCounter;				//计数器
-	//void WriteLocalRecvFile();
-	//void CreateLocalRecvFile();
+	void WriteLocalRecvFile();
+	void CreateLocalRecvFile();
 	BOOL SendDownloadJob();
 	BOOL SendUploadJob();
 	BOOL SendDeleteJob();
