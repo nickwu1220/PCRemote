@@ -493,7 +493,29 @@ void CFileManagerDlg::DropItemOnList(CListCtrl* pDragList, CListCtrl* pDropList)
 void CFileManagerDlg::OnRemoteCopy()
 {
 	// TODO: 在此添加命令处理程序代码
+	m_bIsUpload = false;
+	EnableControl(FALSE);
 
+	//如果是通过鼠标拖拽的，找到Drop到哪个文件夹
+	if(m_nDropIndex != -1 && m_pDropList->GetItemData(m_nDropIndex))
+		m_strCopyDestFolder = m_pDropList->GetItemText(m_nDropIndex, 0);
+
+	m_Remote_Download_Job.RemoveAll();
+	POSITION pos = m_list_remote.GetFirstSelectedItemPosition();
+	while(pos)
+	{
+		int nItem = m_list_remote.GetNextSelectedItem(pos);
+		CString file = m_Remote_Path + m_list_remote.GetItemText(nItem, 0);
+
+		//如果是目录
+		if(m_list_remote.GetItemData(nItem))
+			file += '\\';
+
+		m_Remote_Download_Job.AddHead(file);
+	}
+
+	//发送第一个下载任务
+	SendDownloadJob();
 }
 
 
@@ -1433,6 +1455,31 @@ BOOL CFileManagerDlg::SendDeleteJob()
 	LocalFree(bPacket);
 	m_Remote_Delete_Job.RemoveHead();
 	return TRUE;
+}
+
+BOOL CFileManagerDlg::SendDownloadJob()
+{
+	if(m_Remote_Download_Job.IsEmpty())
+		return FALSE;
+
+	CString file = m_Remote_Download_Job.GetHead();
+	int nPacketSize = file.GetLength() + 2;
+	BYTE *bPacket = (BYTE*)LocalAlloc(LPTR, nPacketSize);
+
+	bPacket[0] = COMMAND_DOWN_FILES;
+	memcpy(bPacket + 1, file.GetBuffer(0), file.GetLength() + 1);
+	m_iocpServer->Send(m_pContext, bPacket, nPacketSize);
+
+	LocalFree(bPacket);
+	//从远端复制到本地的任务列表，删除头个元素
+	m_Remote_Download_Job.RemoveHead();
+
+	return TRUE;
+}
+
+void CFileManagerDlg::CreateLocalRecvFile()
+{
+
 }
 
 void CFileManagerDlg::ShowMessage(char *lpFmt, ...)
