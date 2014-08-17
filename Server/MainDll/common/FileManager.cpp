@@ -493,9 +493,10 @@ UINT CFileManager::SendFileData(LPBYTE lpBuffer)
 // 传送下一个文件
 void CFileManager::UploadNext()
 {
-	list <string>::iterator it = m_UploadList.begin();
-	// 删除一个任务
-	m_UploadList.erase(it);
+// 	list <string>::iterator it = m_UploadList.begin();
+// 	// 删除一个任务
+// 	m_UploadList.erase(it);
+
 	// 还有上传任务
 	if(m_UploadList.empty())
 	{
@@ -504,8 +505,9 @@ void CFileManager::UploadNext()
 	else
 	{
 		// 上传下一个
-		it = m_UploadList.begin();
-		SendFileSize((*it).c_str());
+		//it = m_UploadList.begin();
+		string str = m_UploadList.front();
+		SendFileSize(str.c_str());
 	}
 }
 int CFileManager::SendToken(BYTE bToken)
@@ -530,10 +532,16 @@ bool CFileManager::UploadToRemote(LPBYTE lpBuffer)
 		m_UploadList.push_back((char *)lpBuffer);
 	}
 
-	list <string>::iterator it = m_UploadList.begin();
-	// 发送第一个文件
-	SendFileSize((*it).c_str());
-
+	//list <string>::iterator it = m_UploadList.begin();
+	if (!m_UploadList.empty())
+	{
+		//去除头一个，然后删除
+		string strfile = m_UploadList.front();
+		m_UploadList.pop_front();
+		// 发送第一个文件
+		SendFileSize(strfile.c_str());
+	}
+	
 	return true;
 }
 
