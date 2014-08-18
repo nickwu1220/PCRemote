@@ -583,6 +583,14 @@ void CFileManagerDlg::OnBegindragListLocal(NMHDR *pNMHDR, LRESULT *pResult)
 	if(m_list_local.GetItemText(m_nDragIndex, 0) == "..")
 		return ;
 
+	//如果之前remote列表有选中项，先取消选中
+	POSITION pos = m_list_remote.GetFirstSelectedItemPosition();
+	while(pos)
+	{
+		int nItem = m_list_remote.GetNextSelectedItem(pos);
+		m_list_remote.SetItemState(nItem, 0, LVIS_SELECTED | LVIS_FOCUSED);
+	}
+
 	if(m_list_local.GetSelectedColumn() > 1)
 		m_hCursor = AfxGetApp()->LoadCursor(IDC_MUTI_DRAG);
 	else
@@ -609,6 +617,14 @@ void CFileManagerDlg::OnBegindragListRemote(NMHDR *pNMHDR, LRESULT *pResult)
 
 	if(m_list_remote.GetItemText(m_nDragIndex, 0) == "..")
 		return ;
+
+	//如果之前local列表有选中项，先取消选中
+	POSITION pos = m_list_local.GetFirstSelectedItemPosition();
+	while(pos)
+	{
+		int nItem = m_list_local.GetNextSelectedItem(pos);
+		m_list_local.SetItemState(nItem, 0, LVIS_SELECTED | LVIS_FOCUSED);
+	}
 
 	if(m_list_remote.GetSelectedColumn() > 1)
 		m_hCursor = AfxGetApp()->LoadCursor(IDC_MUTI_DRAG);
@@ -1479,6 +1495,34 @@ BOOL CFileManagerDlg::SendDownloadJob()
 
 void CFileManagerDlg::CreateLocalRecvFile()
 {
+	m_nCounter = 0;
+	CString strDestDirectory = m_Local_Path;
+	int nItem = m_list_local.GetSelectionMark();
+
+	//如果本地列表已经有选择的文件夹,优先使用鼠标drop的文件夹
+	if (!m_strCopyDestFolder.IsEmpty())
+	{
+		strDestDirectory += m_strCopyDestFolder + "\\";
+	}
+	else if (nItem != -1 && m_list_local.GetItemData(nItem) == 1)
+	{
+		strDestDirectory += m_list_local.GetItemText(nItem, 0) + "\\"
+	}
+
+	FILESIZE *pFileSize = (FILESIZE*)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+	DWORD dwSizeHigh = pFileSize->dwSizeHigh;
+	DWORD dwSizeLow  = pFileSize->dwSizeLow;
+
+	m_nOperatingFileLength = (dwSizeHigh * (MAXDWORD+1)) + dwSizeLow;
+
+	//当前正在操作的文件名
+	m_strOperatingFile = m_pContext->m_DeCompressionBuffer.GetBuffer(9);
+	m_strReceiveLocalFile = m_strOperatingFile;
+	// 得到要保存到的本地的文件路径
+	m_strReceiveLocalFile.Replace(m_Remote_Path, strDestDirectory);
+	// 创建多层目录
+	MakeSureDirectoryPathExists(m_strReceiveLocalFile.GetBuffer(0));
+
 
 }
 
