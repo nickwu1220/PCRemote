@@ -499,6 +499,8 @@ void CFileManagerDlg::OnRemoteCopy()
 	//如果是通过鼠标拖拽的，找到Drop到哪个文件夹
 	if(m_nDropIndex != -1 && m_pDropList->GetItemData(m_nDropIndex))
 		m_strCopyDestFolder = m_pDropList->GetItemText(m_nDropIndex, 0);
+	else
+		m_strCopyDestFolder = "";
 
 	m_Remote_Download_Job.RemoveAll();
 	POSITION pos = m_list_remote.GetFirstSelectedItemPosition();
@@ -533,6 +535,8 @@ void CFileManagerDlg::OnLocalCopy()
 	//如果是拖拽的文件，复制到客户端去的
 	if(m_nDropIndex != -1 && m_pDropList->GetItemData(m_nDropIndex))
 		m_strCopyDestFolder = m_pDropList->GetItemText(m_nDropIndex, 0);	//获取文件复制到的目的文件夹
+	else
+		m_strCopyDestFolder = "";
 
 	//重置上传任务列表
 	m_Remote_Upload_Job.RemoveAll();
@@ -1522,6 +1526,152 @@ void CFileManagerDlg::CreateLocalRecvFile()
 	m_strReceiveLocalFile.Replace(m_Remote_Path, strDestDirectory);
 	// 创建多层目录
 	MakeSureDirectoryPathExists(m_strReceiveLocalFile.GetBuffer(0));
+
+	WIN32_FIND_DATA FindFileData;
+	HANDLE hFind = FindFirstFile(m_strReceiveLocalFile, &FindFileData);
+
+	//判断文件是否存在，如果存在，是以覆盖、续传。。。模式传输
+	if (hFind != INVALID_HANDLE_VALUE
+		&& m_nTransferMode != TRANSFER_MODE_OVERWRITE_ALL
+		&& m_nTransferMode != TRANSFER_MODE_ADDITION_ALL
+		&& m_nTransferMode != TRANSFER_MODE_JUMP_ALL)
+	{
+		CFileTransferModeDlg dlg(this);
+		dlg.m_strFileName = m_strReceiveLocalFile;
+
+		switch(dlg.DoModal())
+		{
+		case IDC_OVERWRITE:
+			m_nTransferMode = TRANSFER_MODE_OVERWRITE;
+			break;
+		case IDC_OVERWRITE_ALL:
+			m_nTransferMode = TRANSFER_MODE_OVERWRITE_ALL;
+			break;
+		case IDC_ADDITION:
+			m_nTransferMode = TRANSFER_MODE_ADDITION;
+			break;
+		case IDC_ADDITION_ALL:
+			m_nTransferMode = TRANSFER_MODE_ADDITION_ALL;
+			break;
+		case IDC_JUMP:
+			m_nTransferMode = TRANSFER_MODE_JUMP;
+			break;
+		case IDC_JUMP_ALL:
+			m_nTransferMode = TRANSFER_MODE_JUMP_ALL;
+			break;
+		case IDC_CANCEL:
+			m_nTransferMode = TRANSFER_MODE_CANCEL;
+			break;
+		}
+	}
+
+	if (m_nTransferMode == TRANSFER_MODE_CANCEL)
+	{
+		m_bIsStop = TRUE;
+		SendStop();
+		return ;
+	}
+
+	int nTransferMode;
+	switch(m_nTransferMode)
+	{
+	case TRANSFER_MODE_OVERWRITE_ALL:
+		nTransferMode = TRANSFER_MODE_OVERWRITE;
+		break;
+	case TRANSFER_MODE_ADDITION_ALL:
+		nTransferMode = TRANSFER_MODE_ADDITION;
+		break;
+	case TRANSFER_MODE_JUMP_ALL:
+		nTransferMode = TRANSFER_MODE_JUMP;
+		break;
+	default:
+		nTransferMode = m_nTransferMode;
+	}
+
+	//  1字节Token,四字节偏移高四位，四字节偏移低四位
+	BYTE bToken[9];
+	DWORD dwCreationDisposition;		//文件打开方式
+	memset(bToken, 0, sizeof(bToken));
+	bToken[0] = COMMAND_CONTINUE;		//要发送的数据头
+
+	if (hFind != INVALID_HANDLE_VALUE)
+	{
+		//如果是续传
+		if (nTransferMode == TRANSFER_MODE_ADDITION)
+		{
+			memcpy(bToken + 1, &FindFileData.nFileSizeHigh, 4);
+			memcpy(bToken + 5, &FindFileData.nFileSizeLow, 4);
+
+			//接受的长度递增
+			m_nCounter += FindFileData.nFileSizeHigh * (MAXDWORD+1) + FindFileData.nFileSizeLow;
+			dwCreationDisposition = OPEN_EXISTING;
+		}
+		//覆盖
+		else if (nTransferMode == TRANSFER_MODE_OVERWRITE)
+		{
+			//偏移置0
+			memset(bToken + 1, 0, 8);
+			dwCreationDisposition = CREATE_ALWAYS;
+		}
+		//跳过，文件偏移设为-1
+		else if (nTransferMode == TRANSFER_MODE_JUMP)
+		{
+			m_ProgressCtrl->SetPos(100);
+			DWORD dwOffset = -1;
+			memcpy(bToken + 5, &dwOffset, 4);
+			dwCreationDisposition = OPEN_EXISTING;
+		}
+	}
+	else//文件不存在
+	{
+		memset(bToken + 1, 0, 8);
+		dwCreationDisposition = CREATE_ALWAYS;
+	}
+	FindClose(hFind);
+
+	//创建文件
+	HANDLE hFile = CreateFile(m_strReceiveLocalFile, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, dwCreationDisposition, FILE_ATTRIBUTE_NORMAL, 0);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		m_nOperatingFileLength = 0;
+		m_nCounter = 0;
+		::MessageBox(m_hWnd, m_strReceiveLocalFile + " 文件创建失败", "警告", MB_OK | MB_ICONWARNING);
+		return ;
+	}
+	CloseHandle(hFile);
+
+	ShowProgress();
+
+	if(m_bIsStop)
+		SendStop();
+	else
+		m_iocpServer->Send(m_pContext, bToken, sizeof(bToken));
+}
+
+void CFileManagerDlg::WriteLocalRecvFile()
+{
+	BYTE *pData;
+	int  nHeadLength = 9; //1 + 4 + 4  命令 + 文件偏移high + low
+	FILESIZE *pFileSize;
+	DWORD	dwBytesToWrite;		//接受到的文件内容长度
+	DWORD	dwBytesWrite;
+
+	//得到接受的文件内容
+	pData = m_pContext->m_DeCompressionBuffer.GetBuffer(nHeadLength);
+
+	pFileSize = (FILESIZE *)m_pContext->m_DeCompressionBuffer.GetBuffer(1);
+	m_nCounter = MAKEINT64(pFileSize->dwSizeLow, pFileSize->dwSizeHigh);
+	LONG dwOffsetHigh = pFileSize->dwSizeHigh;
+	LONG dwOffsetLow  = pFileSize->dwSizeLow;
+
+	dwBytesToWrite = m_pContext->m_DeCompressionBuffer.GetBufferLen() - nHeadLength;
+
+	HANDLE hFile = CreateFile(m_strReceiveLocalFile, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+
+	//设置文件偏移
+	SetFilePointer(hFile, dwOffsetLow, &dwOffsetHigh, FILE_BEGIN);
+
+
 
 
 }
