@@ -521,12 +521,6 @@ void CFileManagerDlg::OnRemoteCopy()
 }
 
 
-void CFileManagerDlg::OnUpdateRemoteCopy(CCmdUI *pCmdUI)
-{
-	// TODO: 在此添加命令更新用户界面处理程序代码
-}
-
-
 void CFileManagerDlg::OnLocalCopy()
 {
 	// TODO: 在此添加命令处理程序代码
@@ -566,15 +560,6 @@ void CFileManagerDlg::OnLocalCopy()
 
 	EnableControl(FALSE);
 	SendUploadJob();
-}
-
-
-void CFileManagerDlg::OnUpdateLocalCopy(CCmdUI *pCmdUI)
-{
-	// TODO: 在此添加命令更新用户界面处理程序代码
-	pCmdUI->Enable(m_list_local.IsWindowEnabled() 
-		&& (m_Remote_Path.GetLength() || m_list_remote.GetSelectedCount())
-		&& m_list_local.GetSelectedCount());
 }
 
 
@@ -1041,27 +1026,11 @@ void CFileManagerDlg::OnLocalPrev()
 	FixedLocalFileList("..");
 }
 
-//为根目录时禁用向上按钮
-void CFileManagerDlg::OnUpdateLocalPrev(CCmdUI *pCmdUI)
-{
-	// TODO: 在此添加命令更新用户界面处理程序代码
-	pCmdUI->Enable(m_Local_Path.GetLength() && m_list_local.IsWindowEnabled());
-}
-
-
 void CFileManagerDlg::OnRemotePrev()
 {
 	// TODO: 在此添加命令处理程序代码
 	GetRemoteFileList("..");
 }
-
-//为根目录时禁用向上按钮
-void CFileManagerDlg::OnUpdateRemotePrev(CCmdUI *pCmdUI)
-{
-	// TODO: 在此添加命令更新用户界面处理程序代码
-	pCmdUI->Enable(m_Remote_Path.GetLength() && m_list_remote.IsWindowEnabled());
-}
-
 
 void CFileManagerDlg::OnLocalView()
 {
@@ -1180,14 +1149,6 @@ void CFileManagerDlg::OnLocalDelete()
 	FixedLocalFileList(".");
 }
 
-//不是根目录，并且选中项目大于0
-void CFileManagerDlg::OnUpdateLocalDelete(CCmdUI *pCmdUI)
-{
-	// TODO: 在此添加命令更新用户界面处理程序代码
-	pCmdUI->Enable(m_Local_Path.GetLength() && m_list_local.GetSelectionMark() && m_list_local.IsWindowEnabled());
-}
-
-
 void CFileManagerDlg::OnLocalNewfolder()
 {
 	// TODO: 在此添加命令处理程序代码
@@ -1203,24 +1164,10 @@ void CFileManagerDlg::OnLocalNewfolder()
 }
 
 
-void CFileManagerDlg::OnUpdateLocalNewfolder(CCmdUI *pCmdUI)
-{
-	// TODO: 在此添加命令更新用户界面处理程序代码
-	pCmdUI->Enable(m_Local_Path.GetLength() && m_list_local.IsWindowEnabled());
-}
-
-
 void CFileManagerDlg::OnLocalStop()
 {
 	// TODO: 在此添加命令处理程序代码
 	m_bIsStop = TRUE;
-}
-
-
-void CFileManagerDlg::OnUpdateLocalStop(CCmdUI *pCmdUI)
-{
-	// TODO: 在此添加命令更新用户界面处理程序代码
-	pCmdUI->Enable(!m_list_local.IsWindowEnabled() && m_bIsUpload);
 }
 
 
@@ -1267,13 +1214,6 @@ void CFileManagerDlg::OnRemoteDelete()
 }
 
 
-void CFileManagerDlg::OnUpdateRemoteDelete(CCmdUI *pCmdUI)
-{
-	// TODO: 在此添加命令更新用户界面处理程序代码
-	pCmdUI->Enable(m_Remote_Path.GetLength() && m_list_remote.GetSelectionMark() && m_list_remote.IsWindowEnabled());
-}
-
-
 void CFileManagerDlg::OnRemoteNewfolder()
 {
 	// TODO: 在此添加命令处理程序代码
@@ -1295,17 +1235,44 @@ void CFileManagerDlg::OnRemoteNewfolder()
 }
 
 
-void CFileManagerDlg::OnUpdateRemoteNewfolder(CCmdUI *pCmdUI)
-{
-	// TODO: 在此添加命令更新用户界面处理程序代码
-	pCmdUI->Enable(m_Remote_Path.GetLength() && m_list_remote.IsWindowEnabled());
-}
-
-
 void CFileManagerDlg::OnRemoteStop()
 {
 	// TODO: 在此添加命令处理程序代码
 	m_bIsStop = TRUE;
+}
+
+
+void CFileManagerDlg::OnUpdateRemoteCopy(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_list_remote.IsWindowEnabled()
+		&& (m_Local_Path.GetLength() || m_list_local.GetSelectedCount())
+		&& m_list_remote.GetSelectedCount())
+}
+
+
+void CFileManagerDlg::OnUpdateLocalCopy(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_list_local.IsWindowEnabled() 
+		&& (m_Remote_Path.GetLength() || m_list_remote.GetSelectedCount())
+		&& m_list_local.GetSelectedCount());
+}
+
+
+//为根目录时禁用向上按钮
+void CFileManagerDlg::OnUpdateLocalPrev(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_Local_Path.GetLength() && m_list_local.IsWindowEnabled());
+}
+
+
+//为根目录时禁用向上按钮
+void CFileManagerDlg::OnUpdateRemotePrev(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_Remote_Path.GetLength() && m_list_remote.IsWindowEnabled());
 }
 
 
@@ -1314,6 +1281,42 @@ void CFileManagerDlg::OnUpdateRemoteStop(CCmdUI *pCmdUI)
 	// TODO: 在此添加命令更新用户界面处理程序代码
 	pCmdUI->Enable(!m_list_remote.IsWindowEnabled() && !m_bIsUpload);
 }
+
+//不是根目录，并且选中项目大于0
+void CFileManagerDlg::OnUpdateLocalDelete(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_Local_Path.GetLength() && m_list_local.GetSelectionMark() && m_list_local.IsWindowEnabled());
+}
+
+
+void CFileManagerDlg::OnUpdateLocalNewfolder(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_Local_Path.GetLength() && m_list_local.IsWindowEnabled());
+}
+
+
+void CFileManagerDlg::OnUpdateLocalStop(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(!m_list_local.IsWindowEnabled() && m_bIsUpload);
+}
+
+
+void CFileManagerDlg::OnUpdateRemoteDelete(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_Remote_Path.GetLength() && m_list_remote.GetSelectionMark() && m_list_remote.IsWindowEnabled());
+}
+
+
+void CFileManagerDlg::OnUpdateRemoteNewfolder(CCmdUI *pCmdUI)
+{
+	// TODO: 在此添加命令更新用户界面处理程序代码
+	pCmdUI->Enable(m_Remote_Path.GetLength() && m_list_remote.IsWindowEnabled());
+}
+
 
 bool CFileManagerDlg::DeleteDirectory(LPCTSTR lpszDirectory)
 {
@@ -1355,6 +1358,7 @@ bool CFileManagerDlg::DeleteDirectory(LPCTSTR lpszDirectory)
 	return true;
 }
 
+//把要传输到客户端的文件名存入m_Remote_Upload_Job，如果在local列表选中的是文件，就递归把文件夹里所有的文件名存入m_Remote_Upload_Job
 bool CFileManagerDlg::FixedUploadDirectory(LPCTSTR lpPathName)
 {
 	char lpszFilter[MAX_PATH];
@@ -1671,9 +1675,65 @@ void CFileManagerDlg::WriteLocalRecvFile()
 	//设置文件偏移
 	SetFilePointer(hFile, dwOffsetLow, &dwOffsetHigh, FILE_BEGIN);
 
+	BOOL ret = FALSE;
+	int i;
+	//如果写入失败，尝试多次
+	for (i = 0; i < MAX_WRITE_RETRY; i++)
+	{
+		ret = WriteFile(hFile, pData, dwBytesToWrite, &dwBytesWrite, NULL);
+		if (ret)
+		{
+			break;
+		}
+	}
 
+	if (i == MAX_WRITE_RETRY && !ret)
+	{
+		::MessageBox(m_hWnd, m_strReceiveLocalFile + " 文件写入失败", "警告", MB_OK|MB_ICONWARNING);
+	}
 
+	CloseHandle(hFile);
 
+	//计数器递增
+	m_nCounter += dwBytesWrite;
+	ShowProgress();
+
+	if (m_bIsStop)
+	{
+		SendStop();
+	} 
+	else
+	{
+		BYTE bToken[9];
+		bToken[0] = COMMAND_CONTINUE;
+		dwOffsetLow += dwBytesWrite;
+		memcpy(bToken + 1, &dwOffsetHigh, sizeof(dwOffsetHigh));
+		memcpy(bToken + 5, &dwOffsetLow, sizeof(dwOffsetLow));
+		m_iocpServer->Send(m_pContext, bToken, sizeof(bToken));
+	}
+
+}
+
+void CFileManagerDlg::EndLocalRecvFile()
+{
+	m_nCounter = 0;
+	m_strOperatingFile = "";
+	m_nOperatingFileLength = 0;
+
+	if (m_Remote_Download_Job.IsEmpty() || m_bIsStop)
+	{
+		m_Remote_Download_Job.RemoveAll();
+		m_bIsStop = FALSE;
+
+		m_nTransferMode = TRANSFER_MODE_NORMAL;
+		EnableControl(TRUE);
+		FixedLocalFileList(".");
+	} 
+	else
+	{
+		Sleep(5);
+		SendDownloadJob();
+	}
 }
 
 void CFileManagerDlg::ShowMessage(char *lpFmt, ...)
@@ -1712,6 +1772,12 @@ void CFileManagerDlg::ShowProgress()
 		m_nCounter = m_nOperatingFileLength = 0;
 		// 关闭文件句柄
 	}
+}
+
+void CFileManagerDlg::SendStop()
+{
+	BYTE bBuff = COMMAND_STOP;
+	m_iocpServer->Send(m_pContext, &bBuff, 1);
 }
 
 void CFileManagerDlg::SendFileData()
