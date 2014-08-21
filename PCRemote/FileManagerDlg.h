@@ -149,4 +149,7 @@ public:
 	afx_msg void OnUpdateRemoteStop(CCmdUI *pCmdUI);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	void ExtractShellIconForDriver();
+
+	private:
+		BYTE *m_pSendBuffer;
 };

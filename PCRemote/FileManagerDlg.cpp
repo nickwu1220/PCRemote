@@ -76,10 +76,13 @@ IMPLEMENT_DYNAMIC(CFileManagerDlg, CDialogEx)
 	m_nCounter = 0;
 
 	m_bIsStop = FALSE;
+
+	m_pSendBuffer = (BYTE*)LocalAlloc(LPTR, MAX_SEND_BUFFER);
 }
 
 CFileManagerDlg::~CFileManagerDlg()
 {
+	LocalFree(m_pSendBuffer);
 }
 
 void CFileManagerDlg::DoDataExchange(CDataExchange* pDX)
@@ -1247,7 +1250,7 @@ void CFileManagerDlg::OnUpdateRemoteCopy(CCmdUI *pCmdUI)
 	// TODO: 在此添加命令更新用户界面处理程序代码
 	pCmdUI->Enable(m_list_remote.IsWindowEnabled()
 		&& (m_Local_Path.GetLength() || m_list_local.GetSelectedCount())
-		&& m_list_remote.GetSelectedCount())
+		&& m_list_remote.GetSelectedCount());
 }
 
 
@@ -1514,7 +1517,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
 	}
 	else if (nItem != -1 && m_list_local.GetItemData(nItem) == 1)
 	{
-		strDestDirectory += m_list_local.GetItemText(nItem, 0) + "\\"
+		strDestDirectory += m_list_local.GetItemText(nItem, 0) + "\\";
 	}
 
 	FILESIZE *pFileSize = (FILESIZE*)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
@@ -1807,22 +1810,28 @@ void CFileManagerDlg::SendFileData()
 
 	DWORD nNumberOfBytesToRead = MAX_SEND_BUFFER - nHeadLength;
 	DWORD nNumberOfBytesRead = 0;
-	BYTE *lpBuffer = (BYTE*)LocalAlloc(LPTR, MAX_SEND_BUFFER);
 
-	lpBuffer[0] = COMMAND_FILE_DATA;
-	memcpy(lpBuffer + 1, &dwOffsetHigh, sizeof(dwOffsetHigh));
-	memcpy(lpBuffer + 5, &dwOffsetLow, sizeof(dwOffsetLow));
+	memset(m_pSendBuffer, 0 , MAX_SEND_BUFFER);
+	//BYTE *lpBuffer = (BYTE*)LocalAlloc(LPTR, MAX_SEND_BUFFER);
 
-	ReadFile(hFile, lpBuffer + nHeadLength, nNumberOfBytesToRead, &nNumberOfBytesRead, NULL);
+	m_pSendBuffer[0] = COMMAND_FILE_DATA;
+	memcpy(m_pSendBuffer + 1, &dwOffsetHigh, sizeof(dwOffsetHigh));
+	memcpy(m_pSendBuffer + 5, &dwOffsetLow, sizeof(dwOffsetLow));
+
+	BOOL ret = ReadFile(hFile, m_pSendBuffer + nHeadLength, nNumberOfBytesToRead, &nNumberOfBytesRead, NULL);
+	if (!ret)
+	{
+		MessageBox("ReadFile failed");
+	}
 	CloseHandle(hFile);
 
 	if (nNumberOfBytesRead > 0)
 	{
 		int nPacketSize = nNumberOfBytesRead + nHeadLength;
-		m_iocpServer->Send(m_pContext, lpBuffer, nPacketSize);
+		m_iocpServer->Send(m_pContext, m_pSendBuffer, nPacketSize);
 	}
 
-	LocalFree(lpBuffer);
+	//LocalFree(lpBuffer);
 }
 
 void CFileManagerDlg::EndLocalUploadFile()

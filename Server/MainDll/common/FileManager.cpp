@@ -744,6 +744,10 @@ void CFileManager::WriteLocalRecvFile(LPBYTE lpBuffer, UINT nSize)
 		FILE_ATTRIBUTE_NORMAL,
 		0
 		);
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		OutputDebugString("打开文件失败");
+	}
 	
 	SetFilePointer(hFile, dwOffsetLow, &dwOffsetHigh, FILE_BEGIN);
 	
@@ -757,8 +761,11 @@ void CFileManager::WriteLocalRecvFile(LPBYTE lpBuffer, UINT nSize)
 		&dwBytesWrite,
 		NULL
 		);
-// 	if (nRet <= 0)
-// 		printf("文件写入失败");
+	if (!nRet)
+	{
+		OutputDebugString("文件写入失败");
+	}
+
 	CloseHandle(hFile);
 	// 为了比较，计数器递增
 
