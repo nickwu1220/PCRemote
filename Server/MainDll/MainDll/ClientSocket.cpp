@@ -264,6 +264,7 @@ DWORD WINAPI CClientSocket::WorkThread(LPVOID lparam)
 			int nSize = recv(pThis->m_Socket, buff, sizeof(buff), 0);     //---接收主控端发来的数据
 			if (nSize <= 0)
 			{
+				int nError = WSAGetLastError();
 				pThis->Disconnect();//---接收错误处理
 				break;
 			}

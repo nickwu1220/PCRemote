@@ -248,7 +248,7 @@ UINT CBuffer::GetBufferLen()
 ////////////////////////////////////////////////////////////////////////////////
 UINT CBuffer::ReAllocateBuffer(UINT nRequestedSize)
 {
-	if (nRequestedSize < GetMemSize())
+	if (nRequestedSize <= GetMemSize())
 		return 0;
 
 	// Allocate new size
@@ -301,7 +301,7 @@ UINT CBuffer::DeAllocateBuffer(UINT nRequestedSize)
 	// Allocate new size
 	UINT nNewSize = (UINT) ceil(nRequestedSize / 1024.0) * 1024;
 
-	if (nNewSize < GetMemSize())
+	if (nNewSize <= GetMemSize())
 		return 0;
 
 	// New Copy Data Over

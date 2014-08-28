@@ -662,6 +662,8 @@ unsigned CIOCPServer::ThreadPoolFunc (LPVOID thisContext)
 
 	InterlockedDecrement(&pThis->m_nCurrentThreads);
 	InterlockedDecrement(&pThis->m_nBusyThreads);
+
+	TRACE("Threadid = %d. ThreadPoolFunc return\n", GetCurrentThreadId());
    	return 0;
 } 
 
@@ -799,7 +801,11 @@ void CIOCPServer::Send(ClientContext* pContext, LPBYTE lpData, UINT nSize)
 			pContext->m_ResendWriteBuffer.Write(m_bPacketFlag, sizeof(m_bPacketFlag));	// 备份发送的数据	
 		}
 		// Wait for Data Ready signal to become available
-		WaitForSingleObject(pContext->m_hWriteComplete, INFINITE);
+		DWORD dwWaitResult = WaitForSingleObject(pContext->m_hWriteComplete, INFINITE);
+//  		if (dwWaitResult == WAIT_OBJECT_0)
+//  		{   //调试时使用过
+//  			TRACE("threadID= %d. m_WriteBuffer cleaned\n", GetCurrentThreadId());
+//  		}
 
 		// Prepare Packet
 	 //	pContext->m_wsaOutBuffer.buf = (CHAR*) new BYTE[nSize];
@@ -1005,9 +1011,16 @@ bool CIOCPServer::OnClientWriting(ClientContext* pContext, DWORD dwIoSize)
 
 		// Finished writing - tidy up
 		pContext->m_WriteBuffer.Delete(dwIoSize);
+
+		TRACE("ThreadId = %d, pContext->m_WriteBuffer.Delete(%d)\n", GetCurrentThreadId(), dwIoSize);
+
 		if (pContext->m_WriteBuffer.GetBufferLen() == 0)
 		{
 			pContext->m_WriteBuffer.ClearBuffer();
+
+			TRACE("1->ThreadId = %d, pContext->m_WriteBuffer.GetBufferLen() = %d\n",
+				GetCurrentThreadId(), pContext->m_WriteBuffer.GetBufferLen());
+
 			// Write complete
 			SetEvent(pContext->m_hWriteComplete);
 			return true;			// issue new read after this one
@@ -1021,6 +1034,11 @@ bool CIOCPServer::OnClientWriting(ClientContext* pContext, DWORD dwIoSize)
 
 			pContext->m_wsaOutBuffer.buf = (char*) pContext->m_WriteBuffer.GetBuffer();
 			pContext->m_wsaOutBuffer.len = pContext->m_WriteBuffer.GetBufferLen();
+
+			CString str;
+			str.Format("2->ThreadId = %d,  dpContext->m_WriteBuffer.GetBufferLen() = %d\n", 
+				GetCurrentThreadId(), pContext->m_WriteBuffer.GetBufferLen());
+			OutputDebugString(str);
 
 			int nRetVal = WSASend(pContext->m_Socket, 
 							&pContext->m_wsaOutBuffer,
@@ -1146,6 +1164,7 @@ void CIOCPServer::RemoveStaleClient(ClientContext* pContext, BOOL bGraceful)
 		CancelIo((HANDLE) pContext->m_Socket);
 
 		closesocket( pContext->m_Socket );
+		CloseHandle(pContext->m_hWriteComplete);
 		pContext->m_Socket = INVALID_SOCKET;
 
         while (!HasOverlappedIoCompleted((LPOVERLAPPED)pContext)) 
@@ -1257,6 +1276,7 @@ ClientContext*  CIOCPServer::AllocateContext()
 
 		ZeroMemory(pContext, sizeof(ClientContext));
 		pContext->m_bIsMainSocket = false;
+		pContext->m_hWriteComplete = CreateEvent(NULL, FALSE, TRUE, NULL);	//send 完成事件
 		memset(pContext->m_Dialog, 0, sizeof(pContext->m_Dialog));
 	}
 	return pContext;

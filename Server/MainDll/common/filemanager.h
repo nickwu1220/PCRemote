@@ -30,6 +30,8 @@ public:
 	CFileManager(CClientSocket *pClient);
 	virtual ~CFileManager();
 private:
+	BYTE *m_pSendBuffer;	//发送文件内容时，使用的缓存。避免每发送一块就申请、释放内存
+
 	list <string> m_UploadList;
 	UINT m_nTransferMode;
 	char m_strCurrentProcessFileName[MAX_PATH]; // 当前正在处理的文件

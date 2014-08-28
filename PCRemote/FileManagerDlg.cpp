@@ -1731,6 +1731,7 @@ void CFileManagerDlg::EndLocalRecvFile()
 		m_nTransferMode = TRANSFER_MODE_NORMAL;
 		EnableControl(TRUE);
 		FixedLocalFileList(".");
+		m_ProgressCtrl->SetPos(0);
 	} 
 	else
 	{
@@ -1846,6 +1847,7 @@ void CFileManagerDlg::EndLocalUploadFile()
 		m_bIsStop = FALSE;
 		EnableControl(TRUE);
 		GetRemoteFileList(".");
+		m_ProgressCtrl->SetPos(0);
 	} 
 	else
 	{
