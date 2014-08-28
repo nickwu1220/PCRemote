@@ -1158,7 +1158,7 @@ void CFileManagerDlg::OnLocalNewfolder()
 	if(m_Local_Path == "")
 		return ;
 
-	CInputDialog dlg;
+	CInputDialog dlg(this);		//this是因为指定CFileManagerDlg为父窗口
 	if (dlg.DoModal() == IDOK && dlg.m_strDirectory.GetLength())
 	{
 		MakeSureDirectoryPathExists(m_Local_Path + dlg.m_strDirectory + "\\");
@@ -1223,7 +1223,7 @@ void CFileManagerDlg::OnRemoteNewfolder()
 	if(m_Remote_Path == "")
 		return ;
 
-	CInputDialog dlg;
+	CInputDialog dlg(this);
 	if (dlg.DoModal() == IDOK && dlg.m_strDirectory.GetLength())
 	{
 		CString file = m_Remote_Path + dlg.m_strDirectory + "\\";
