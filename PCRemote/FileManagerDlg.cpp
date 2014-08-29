@@ -134,6 +134,8 @@ BEGIN_MESSAGE_MAP(CFileManagerDlg, CDialogEx)
 	ON_UPDATE_COMMAND_UI(IDT_REMOTE_NEWFOLDER, &CFileManagerDlg::OnUpdateRemoteNewfolder)
 	ON_COMMAND(IDT_REMOTE_STOP, &CFileManagerDlg::OnRemoteStop)
 	ON_UPDATE_COMMAND_UI(IDT_REMOTE_STOP, &CFileManagerDlg::OnUpdateRemoteStop)
+	ON_NOTIFY(NM_RCLICK, IDC_LIST_LOCAL, &CFileManagerDlg::OnNMRClickListLocal)
+	ON_NOTIFY(NM_RCLICK, IDC_LIST_REMOTE, &CFileManagerDlg::OnNMRClickListRemote)
 END_MESSAGE_MAP()
 
 
@@ -2127,4 +2129,97 @@ bool CFileManagerDlg::MakeSureDirectoryPathExists(LPCTSTR pszDirPath)
 
 	free(pszDirCopy);
 	return TRUE;
+}
+
+
+void CFileManagerDlg::OnNMRClickListLocal(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	//LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	CMenu popup;
+	popup.LoadMenu(IDR_FILEMANAGER);
+	CMenu *pM = popup.GetSubMenu(0);
+
+	pM->DeleteMenu(6, MF_BYPOSITION);		//删除菜单里的“远程打开”
+
+	CPoint p;
+	GetCursorPos(&p);
+
+	if (m_list_local.GetSelectedCount() == 0)
+	{
+		UINT nCount = pM->GetMenuItemCount();
+		for(UINT i = 0; i < nCount; i++)
+		{
+			pM->EnableMenuItem(i, MF_BYPOSITION | MF_GRAYED);
+		}
+	}
+
+	if (m_list_local.GetSelectedCount() <= 1)
+	{
+		pM->EnableMenuItem(IDM_NEWFOLDER, MF_BYCOMMAND | MF_ENABLED);
+	}
+
+	if (m_list_local.GetSelectedCount() == 1)
+	{
+		//是文件夹
+		if (m_list_local.GetItemData(m_list_local.GetSelectionMark()) == 1)
+			pM->EnableMenuItem(IDM_LOCAL_OPEN, MF_BYCOMMAND | MF_GRAYED);
+		else
+			pM->EnableMenuItem(IDM_LOCAL_OPEN, MF_BYCOMMAND | MF_ENABLED);
+	}
+	else
+	{
+		pM->EnableMenuItem(IDM_LOCAL_OPEN, MF_BYCOMMAND | MF_GRAYED);
+	}
+
+	pM->EnableMenuItem(IDM_REFRESH, MF_BYCOMMAND | MF_ENABLED);
+	pM->TrackPopupMenu(TPM_LEFTALIGN, p.x, p.y, this);
+
+	*pResult = 0;
+}
+
+
+void CFileManagerDlg::OnNMRClickListRemote(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	//LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	CMenu popup;
+	popup.LoadMenu(IDR_FILEMANAGER);
+	CMenu *pM = popup.GetSubMenu(0);
+
+	pM->DeleteMenu(IDM_LOCAL_OPEN, MF_BYCOMMAND);		//删除菜单里的“本地打开”
+
+	CPoint p;
+	GetCursorPos(&p);
+
+	if (m_list_remote.GetSelectedCount() == 0)
+	{
+		UINT nCount = pM->GetMenuItemCount();
+		for(UINT i = 0; i < nCount; i++)
+		{
+			pM->EnableMenuItem(i, MF_BYPOSITION | MF_GRAYED);
+		}
+	}
+
+	if (m_list_remote.GetSelectedCount() <= 1)
+	{
+		pM->EnableMenuItem(IDM_NEWFOLDER, MF_BYCOMMAND | MF_ENABLED);
+	}
+
+	if (m_list_remote.GetSelectedCount() == 1)
+	{
+		//是文件夹
+		if (m_list_remote.GetItemData(m_list_remote.GetSelectionMark()) == 1)
+			pM->EnableMenuItem(5, MF_BYPOSITION | MF_GRAYED);
+		else
+			pM->EnableMenuItem(5, MF_BYPOSITION | MF_ENABLED);
+	}
+	else
+	{
+		pM->EnableMenuItem(5, MF_BYPOSITION | MF_GRAYED);
+	}
+
+	pM->EnableMenuItem(IDM_REFRESH, MF_BYCOMMAND | MF_ENABLED);
+	pM->TrackPopupMenu(TPM_LEFTALIGN, p.x, p.y, this);
+	*pResult = 0;
 }

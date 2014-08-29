@@ -152,4 +152,7 @@ public:
 
 	private:
 		BYTE *m_pSendBuffer;
+public:
+	afx_msg void OnNMRClickListLocal(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnNMRClickListRemote(NMHDR *pNMHDR, LRESULT *pResult);
 };
