@@ -155,4 +155,14 @@ public:
 public:
 	afx_msg void OnNMRClickListLocal(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnNMRClickListRemote(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnTransfer();
+	afx_msg void OnRename();
+	afx_msg void OnDelete();
+	afx_msg void OnNewfolder();
+	afx_msg void OnLocalOpen();
+	afx_msg void OnRemoteOpenShow();
+	afx_msg void OnRemoteOpenHide();
+	afx_msg void OnRefresh();
+	afx_msg void OnLvnEndlabeleditListLocal(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnLvnEndlabeleditListRemote(NMHDR *pNMHDR, LRESULT *pResult);
 };

